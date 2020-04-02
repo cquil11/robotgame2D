@@ -6,7 +6,7 @@ import os
 
 class Game:
     def __init__(self):
-        # initialize game window
+        # initialize game windows
         pg.init()
         pg.mixer.init()
         self.screen = pg.display.set_mode((WIDTH, HEIGHT))
