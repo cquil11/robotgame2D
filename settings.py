@@ -17,7 +17,6 @@ gleft = pg.image.load('images/Goblin2.png')
 gright = pg.image.load('images/Goblin.png')
 FONT_NAME = 'arial'
 go_music = pg.mixer.music.load('sounds/game_over_sound.mp3')
-game_music = pg.mixer.music.load('sounds/music.mp3')
 
 # player property
 PLAYER_ACC = 0.9
