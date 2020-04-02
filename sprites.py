@@ -66,6 +66,17 @@ class Monster(pg.sprite.Sprite):
         self.rect = self.image.get_rect()
         self.pos = vec(WIDTH /2, HEIGHT / 2)
 
+    def move_towards_player(self, player):
+        dx, dy = player.rect.x - self.rect.x, player.rect.y - self.rect.y
+        dist = math.hypot(dx, dy)
+        dx, dy = dx / dist, dy / dist
+
+        self.rect.x += dx * self.speed
+        self.rect.y += dy * self.speed
+
+
+
+
 
 class MonsterBullet(pg.sprite.Sprite):
     def __init__(self, game):
