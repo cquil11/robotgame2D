@@ -47,7 +47,7 @@ class Player(pg.sprite.Sprite):
             self.pos.x = WIDTH
 
         self.rect.midbottom = self.pos
-
+#ummmmm
 
 class Platform(pg.sprite.Sprite):
     def __init__(self, x, y, w, h):
