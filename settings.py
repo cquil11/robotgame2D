@@ -16,7 +16,7 @@ end_background = pg.image.load('images/game_over.png')
 FONT_NAME = 'arial'
 go_music = pg.mixer.music.load('sounds/game_over_sound.mp3')
 
-# player properties
+# player property
 PLAYER_ACC = 0.9
 PLAYER_FRICTION = -0.12
 PLAYER_GRAV = 0.8
