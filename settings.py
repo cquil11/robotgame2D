@@ -5,16 +5,16 @@ TITLE = "ROBOT GAME"
 WIDTH = 800
 HEIGHT = 600
 FPS = 30
-start_background1 = pg.image.load('start_background1.png')
-start_background2 = pg.image.load('start_background2.png')
-start_background3 = pg.image.load('start_background3.png')
-start_background4 = pg.image.load('start_background4.png')
-pleft = pg.image.load('player_left.png')
-pright = pg.image.load('player_right.png')
-hamel = pg.image.load('hamel_monster.png')
-end_background = pg.image.load('game_over.png')
+start_background1 = pg.image.load('images/start_background1.png')
+start_background2 = pg.image.load('images/start_background2.png')
+start_background3 = pg.image.load('images/start_background3.png')
+start_background4 = pg.image.load('images/start_background4.png')
+pleft = pg.image.load('images/player_left.png')
+pright = pg.image.load('images/player_right.png')
+hamel = pg.image.load('images/hamel_monster.png')
+end_background = pg.image.load('images/game_over.png')
 FONT_NAME = 'arial'
-go_music = pg.mixer.music.load('game_over_sound.mp3')
+go_music = pg.mixer.music.load('sounds/game_over_sound.mp3')
 
 # player properties
 PLAYER_ACC = 0.9
