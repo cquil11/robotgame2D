@@ -1,6 +1,6 @@
 import pygame as pg
 import random
-#from settings import *
+from settings import *
 from sprites import *
 import os
 
