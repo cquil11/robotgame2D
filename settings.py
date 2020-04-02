@@ -14,7 +14,7 @@ pright = pg.image.load('player_right.png')
 hamel = pg.image.load('hamel_monster.png')
 end_background = pg.image.load('game_over.png')
 FONT_NAME = 'arial'
-#go_music = pg.mixer.music.load('sounds/game_over_sound.mp3')
+go_music = pg.mixer.music.load('sounds/game_over_sound.mp3')
 
 # player properties
 PLAYER_ACC = 0.9
