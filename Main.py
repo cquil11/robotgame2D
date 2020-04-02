@@ -93,9 +93,6 @@ class Game:
         if not self.running:
             return
         self.screen.blit(end_background, (0, 0))
-        self.draw_text("GAME OVER", 60, RED, WIDTH / 2, 48)
-        self.draw_text("PRESS ANY KEY TO PLAY AGAIN", 35, WHITE, WIDTH / 2, HEIGHT - 100)
-        self.draw_text("FINAL LEVEL: ", 35, WHITE, WIDTH / 2, HEIGHT / 2)
         pg.display.flip()
         self.wait_for_key()
         game_over_sound.stop()
