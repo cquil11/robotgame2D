@@ -76,6 +76,7 @@ class Monster(pg.sprite.Sprite):
             self.rect.x += self.velX
         else:
             self.rect.x -= self.velX
+            #why
 
         if ( self.rect.x > WIDTH - 128):
             self.velX = -self.velX
