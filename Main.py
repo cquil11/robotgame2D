@@ -12,6 +12,7 @@ class Game:
         self.screen = pg.display.set_mode((WIDTH, HEIGHT))
         pg.display.set_caption("My Game")
         self.clock = pg.time.Clock()
+        pg.mixer.music.play(-1)
         self.running = True
         self.font_name = pg.font.match_font(FONT_NAME)
 
@@ -87,7 +88,7 @@ class Game:
 
     def show_go_screen(self):
         # game over screen
-        pg.mixer.music.play(go_music, 0)
+        game_over_sound.play()
         if not self.running:
             return
         self.screen.blit(end_background, (0, 0))
@@ -96,6 +97,7 @@ class Game:
         self.draw_text("FINAL LEVEL: ", 35, WHITE, WIDTH / 2, HEIGHT / 2)
         pg.display.flip()
         self.wait_for_key()
+        game_over_sound.stop()
 
     def wait_for_key(self):
         waiting = True
