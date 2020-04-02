@@ -13,6 +13,8 @@ pleft = pg.image.load('images/player_left.png')
 pright = pg.image.load('images/player_right.png')
 hamel = pg.image.load('images/hamel_monster.png')
 end_background = pg.image.load('images/game_over.png')
+gleft = pg.image.load('images/Goblin2.png')
+gright = pg.image.load('images/Goblin.png')
 FONT_NAME = 'arial'
 go_music = pg.mixer.music.load('sounds/game_over_sound.mp3')
 

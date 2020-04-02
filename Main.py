@@ -87,7 +87,7 @@ class Game:
 
     def show_go_screen(self):
         # game over screen
-        pg.mixer.music.play(0)
+        pg.mixer.music.play(go_music, 0)
         if not self.running:
             return
         self.screen.blit(end_background, (0, 0))
