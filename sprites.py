@@ -57,7 +57,7 @@ class Platform(pg.sprite.Sprite):
         self.image = platform_skin
         self.rect.x = x
         self.rect.y = y
-        #why this not working
+        #why this not working?
 
 # test
 class Monster(pg.sprite.Sprite):
