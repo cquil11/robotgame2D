@@ -27,10 +27,10 @@ class Player(pg.sprite.Sprite):
     def update(self):
         self.acc = vec(0, PLAYER_GRAV)
         keys = pg.key.get_pressed()
-        if keys[pg.K_LEFT] | keys[pg.K_a]:
+        if keys[pg.K_LEFT]:
             self.acc.x = -PLAYER_ACC
             self.image = pleft
-        if keys[pg.K_RIGHT] | keys[pg.K_d]:
+        if keys[pg.K_RIGHT]:
             self.acc.x = PLAYER_ACC
             self.image = pright
 
@@ -45,29 +45,33 @@ class Player(pg.sprite.Sprite):
             self.pos.x = 0
         if self.pos.x < 0:
             self.pos.x = WIDTH
-        self.rect.midbottom = self.pos
 
+        self.rect.midbottom = self.pos
+#ummmmm
 
 class Platform(pg.sprite.Sprite):
     def __init__(self, x, y, w, h):
         pg.sprite.Sprite.__init__(self)
         self.image = pg.Surface((w, h))
         self.rect = self.image.get_rect()
-        self.image.fill(GREEN)
+        self.image = platform_skin
         self.rect.x = x
         self.rect.y = y
-        # why this not working
+        #why this not working?
 
 # test
-
-
 class Monster(pg.sprite.Sprite):
-    def __init__(self, game):
+    def __init__(self):
         pg.sprite.Sprite.__init__(self)
         self.game = game
         self.image = hamel
         self.rect = self.image.get_rect()
-        self.pos = vec(WIDTH /2, HEIGHT / 2)
+        self.rect.x = 0
+        self.rect.y = 20
+        self.velX = 4
+
+    def update(self):
+        self.rect.x += self.velX
 
     def move_towards_player(self, player):
         dx = player.rect.x - self.rect.x
