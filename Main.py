@@ -71,7 +71,7 @@ class Game:
 
     def draw(self):
         # game loop draw
-        self.screen.fill(BLACK)
+        self.screen.blit(game_background, (0, 0))
         self.all_sprites.draw(self.screen)
         self.draw_text("LEVEL: ", 22, WHITE, WIDTH/2, 15)
         # *after* drawing everything, flip the display

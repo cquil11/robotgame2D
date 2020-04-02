@@ -28,8 +28,10 @@ class Player(pg.sprite.Sprite):
         keys = pg.key.get_pressed()
         if keys[pg.K_LEFT]:
             self.acc.x = -PLAYER_ACC
+            self.image = pleft
         if keys[pg.K_RIGHT]:
             self.acc.x = PLAYER_ACC
+            self.image = pright
 
         # slows player down over time
         self.acc.x += self.vel.x * PLAYER_FRICTION
