@@ -47,7 +47,7 @@ class Player(pg.sprite.Sprite):
             self.pos.x = WIDTH
 
         self.rect.midbottom = self.pos
-#ummmmm
+
 
 class Platform(pg.sprite.Sprite):
     def __init__(self, x, y, w, h):
@@ -57,9 +57,8 @@ class Platform(pg.sprite.Sprite):
         self.image = platform_skin
         self.rect.x = x
         self.rect.y = y
-        #why this not working?
 
-# test
+
 class Monster(pg.sprite.Sprite):
     def __init__(self, game):
         pg.sprite.Sprite.__init__(self)
@@ -69,6 +68,7 @@ class Monster(pg.sprite.Sprite):
         self.rect.x = 0
         self.rect.y = 20
         self.velX = 4
+        self.pos = vec(WIDTH / 2, HEIGHT / 2)
 
     def update(self):
         self.rect.x += self.velX
@@ -77,6 +77,11 @@ class Monster(pg.sprite.Sprite):
         if ( self.rect.x < WIDTH ):
             self.velX = -self.velX
 
+
+        if self.pos.x > WIDTH:
+            self.pos.x = 0
+        if self.pos.x < 0:
+            self.pos.x = WIDTH
 
     def move_towards_player(self, player):
         dx = player.rect.x - self.rect.x
