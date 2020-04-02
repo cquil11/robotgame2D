@@ -68,13 +68,18 @@ class Monster(pg.sprite.Sprite):
         self.rect = self.image.get_rect()
         self.rect.x = 0
         self.rect.y = 20
-        self.velX = 4
+        self.velX = 5
 
-    def update(self):
-        self.rect.x += self.velX
-        if ( self.rect.x > WIDTH ):
+    def update(self, player):
+        dx = self.rect.x - player.rect.x
+        if ( dx < 0 ):
+            self.rect.x += self.velX
+        else:
+            self.rect.x -= self.velX
+
+        if ( self.rect.x > WIDTH - 128):
             self.velX = -self.velX
-        if ( self.rect.x < WIDTH ):
+        if ( self.rect.x < 0 ):
             self.velX = -self.velX
 
 
