@@ -27,6 +27,11 @@ PLAYER_FRICTION = -0.12
 PLAYER_GRAV = 0.8
 PLAYER_JUMP = -15
 
+# enemy property
+BOSS_ACC = 0.5
+BOSS_DECEL = -0.10
+
+
 # default platforms
 PLATFORM_LIST = [(0, HEIGHT - 20, WIDTH / 2 - 80, 20),
                  (WIDTH / 2 + 80, HEIGHT - 20, WIDTH / 2 - 50, 20),

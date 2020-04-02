@@ -1,6 +1,7 @@
 # player and enemy classes for game
 from settings import *
 import pygame as pg
+import math
 
 vec = pg.math.Vector2
 
@@ -67,12 +68,17 @@ class Monster(pg.sprite.Sprite):
         self.pos = vec(WIDTH /2, HEIGHT / 2)
 
     def move_towards_player(self, player):
-        dx, dy = player.rect.x - self.rect.x, player.rect.y - self.rect.y
-        dist = math.hypot(dx, dy)
-        dx, dy = dx / dist, dy / dist
+        dx = player.rect.x - self.rect.x
 
-        self.rect.x += dx * self.speed
-        self.rect.y += dy * self.speed
+        print(dx)
+
+        if dx < 0:
+            self.acc = BOSS_ACC
+        else:
+            self.acc = -BOSS_ACC
+
+        self.vel += self.acc
+        self.pos += self.vel + 0.5 * self.acc
 
 
 
