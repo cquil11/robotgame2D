@@ -29,7 +29,7 @@ class Game:
             self.all_sprites.add(p)
             self.platforms.add(p)
         self.run()
-
+# g
     def run(self):
         # game loop
         self.playing = True
