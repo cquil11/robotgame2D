@@ -52,7 +52,7 @@ class Game:
         if self.player.rect.bottom > HEIGHT:
             pg.mixer.music.pause()
             for sprite in self.all_sprites:
-                sprite.rect.y -= (int)(max(self.player.vel.y, 10))
+                sprite.rect.y -= int(max(self.player.vel.y, 10))
                 if sprite.rect.bottom < 0:
                     sprite.kill()
         if len(self.platforms) == 0:
