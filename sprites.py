@@ -45,7 +45,6 @@ class Player(pg.sprite.Sprite):
             self.pos.x = 0
         if self.pos.x < 0:
             self.pos.x = WIDTH
-
         self.rect.midbottom = self.pos
 
 
@@ -57,7 +56,7 @@ class Platform(pg.sprite.Sprite):
         self.image = platform_skin
         self.rect.x = x
         self.rect.y = y
-        #why this not working
+        # why this not working
 
 # test
 class Monster(pg.sprite.Sprite):
