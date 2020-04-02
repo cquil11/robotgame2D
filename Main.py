@@ -4,7 +4,7 @@ import random
 from sprites import *
 import os
 
-
+# i hate niiger
 class Game:
     def __init__(self):
         # initialize game window
