@@ -50,6 +50,7 @@ class Game:
                 self.player.vel.y = 0
         # DEATH
         if self.player.rect.bottom > HEIGHT:
+            pg.mixer.music.stop()
             for sprite in self.all_sprites:
                 sprite.rect.y -= (int)(max(self.player.vel.y, 10))
                 if sprite.rect.bottom < 0:
