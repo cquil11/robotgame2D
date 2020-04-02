@@ -61,12 +61,17 @@ class Platform(pg.sprite.Sprite):
 
 # test
 class Monster(pg.sprite.Sprite):
-    def __init__(self, game):
+    def __init__(self):
         pg.sprite.Sprite.__init__(self)
         self.game = game
         self.image = hamel
         self.rect = self.image.get_rect()
-        self.pos = vec(WIDTH /2, HEIGHT / 2)
+        self.rect.x = 0
+        self.rect.y = 20
+        self.velX = 4
+
+    def update(self):
+        self.rect.x += self.velX
 
     def move_towards_player(self, player):
         dx = player.rect.x - self.rect.x
