@@ -50,7 +50,7 @@ class Game:
                 self.player.vel.y = 0
         # DEATH
         if self.player.rect.bottom > HEIGHT:
-            pg.mixer.music.stop()
+            pg.mixer.music.pause()
             for sprite in self.all_sprites:
                 sprite.rect.y -= (int)(max(self.player.vel.y, 10))
                 if sprite.rect.bottom < 0:
@@ -99,6 +99,7 @@ class Game:
         pg.display.flip()
         self.wait_for_key()
         game_over_sound.stop()
+        pg.mixer.music.unpause()
 
     def wait_for_key(self):
         waiting = True
