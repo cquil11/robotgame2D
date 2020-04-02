@@ -27,10 +27,10 @@ class Player(pg.sprite.Sprite):
     def update(self):
         self.acc = vec(0, PLAYER_GRAV)
         keys = pg.key.get_pressed()
-        if keys[pg.K_LEFT]:
+        if keys[pg.K_LEFT] | keys[pg.K_a]:
             self.acc.x = -PLAYER_ACC
             self.image = pleft
-        if keys[pg.K_RIGHT]:
+        if keys[pg.K_RIGHT] | keys[pg.K_d]:
             self.acc.x = PLAYER_ACC
             self.image = pright
 
@@ -53,12 +53,14 @@ class Platform(pg.sprite.Sprite):
         pg.sprite.Sprite.__init__(self)
         self.image = pg.Surface((w, h))
         self.rect = self.image.get_rect()
-        self.image = platform_skin
+        self.image.fill(GREEN)
         self.rect.x = x
         self.rect.y = y
         # why this not working
 
 # test
+
+
 class Monster(pg.sprite.Sprite):
     def __init__(self, game):
         pg.sprite.Sprite.__init__(self)
