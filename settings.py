@@ -15,6 +15,7 @@ pright = pg.image.load('images/player_right.png')
 hamel = pg.image.load('images/hamel_monster.png')
 hamel_open = pg.image.load('images/hamel_monster_open.png')
 end_background = pg.image.load('images/game_over.png')
+platform_skin = pg.image.load('images/platform.png')
 gleft = pg.image.load('images/Goblin2.png')
 gright = pg.image.load('images/Goblin.png')
 FONT_NAME = 'arial'
