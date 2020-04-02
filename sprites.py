@@ -65,3 +65,13 @@ class Monster(pg.sprite.Sprite):
         self.image = hamel
         self.rect = self.image.get_rect()
         self.pos = vec(WIDTH /2, HEIGHT / 2)
+
+
+class Goblin(pg.sprite.Sprite):
+    def __init__(self, game):
+        pg.sprite.Sprite.__init__(self)
+        self.game = game
+        self.image = gleft
+        self.rect = self.image.get_rect()
+        self.pos = vec(WIDTH /2, HEIGHT / 2)
+
