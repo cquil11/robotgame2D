@@ -31,7 +31,7 @@ class Game:
         self.run()
 
     def run(self):
-        # game loops
+        # game loopsh
         self.playing = True
         while self.playing:
             self.clock.tick(FPS)
