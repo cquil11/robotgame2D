@@ -5,27 +5,55 @@ TITLE = "ROBOT GAME"
 WIDTH = 800
 HEIGHT = 600
 FPS = 30
-start_background1 = pg.image.load('start_background1.png')
-start_background2 = pg.image.load('start_background2.png')
-start_background3 = pg.image.load('start_background3.png')
-start_background4 = pg.image.load('start_background4.png')
-pleft = pg.image.load('player_left.png')
-pright = pg.image.load('player_right.png')
-hamel = pg.image.load('hamel_monster.png')
-end_background = pg.image.load('game_over.png')
+start_background1 = pg.image.load('images/start_background1.png')
+start_background2 = pg.image.load('images/start_background2.png')
+start_background3 = pg.image.load('images/start_background3.png')
+start_background4 = pg.image.load('images/start_background4.png')
+game_background = pg.image.load('images/deadfriends.png')
+pleft = pg.image.load('images/player_left.png')
+pright = pg.image.load('images/player_right.png')
+hamel = pg.image.load('images/hamel_monster.png')
+hamel_open = pg.image.load('images/hamel_monster_open.png')
+castle_background = pg.image.load('images/castle_background_800x600.png')
+end_background = pg.image.load('images/game_over.png')
+platform_320 = pg.image.load('images/plat_320.png')
+platform_100 = pg.image.load('images/plat_100.png')
+platform_150 = pg.image.load('images/plat_150.png')
+gleft = pg.image.load('images/Goblin2.png')
+gright = pg.image.load('images/Goblin.png')
 FONT_NAME = 'arial'
-#go_music = pg.mixer.music.load('sounds/game_over_sound.mp3')
+game_over_sound = pg.mixer.Sound('sounds/game_over_sound.wav')
+death_sound = pg.mixer.Sound('sounds/fuck.wav')
+#game_music = pg.mixer.music.load('sounds/uzi_music.mp3')
+songs = ['sounds/uzi_music.mp3', 'sounds/death_song.mp3']
 
-# player properties
+def play_song(song_name):
+    queued_song = songs.index(song_name)
+    pg.mixer.music.load(songs[queued_song])
+    pg.mixer.music.play(-1)
+
+
+
+
+
+
+# player property
 PLAYER_ACC = 0.9
 PLAYER_FRICTION = -0.12
 PLAYER_GRAV = 0.8
 PLAYER_JUMP = -15
 
+# enemy property
+BOSS_ACC = 0.5
+BOSS_DECEL = -0.10
+
+
 # default platforms
 PLATFORM_LIST = [(0, HEIGHT - 20, WIDTH / 2 - 80, 20),
-                 (WIDTH / 2 + 80, HEIGHT - 20, WIDTH / 2 - 50, 20),
-                 (WIDTH / 2 - 50, HEIGHT * 3 / 4, 100, 20)]
+                 (WIDTH / 2 + 80, HEIGHT - 20, WIDTH / 2 - 80, 20),
+                 (WIDTH / 2 - 50, HEIGHT * 3 / 4, 100, 20),
+                 (50, HEIGHT * 5 / 8, 150, 20),
+                 (WIDTH-200, HEIGHT * 5 / 8, 150, 20)]
 # define colors and backgrounds
 WHITE = (255, 255, 255)
 BLACK = (0, 0, 0)

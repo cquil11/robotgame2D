@@ -1,18 +1,19 @@
 import pygame as pg
 import random
-#from settings import *
+import math
+from settings import *
 from sprites import *
 import os
 
-
 class Game:
     def __init__(self):
-        # initialize game window
+        # initialize game windows
         pg.init()
         pg.mixer.init()
         self.screen = pg.display.set_mode((WIDTH, HEIGHT))
         pg.display.set_caption("My Game")
         self.clock = pg.time.Clock()
+        play_song('sounds/uzi_music.mp3')
         self.running = True
         self.font_name = pg.font.match_font(FONT_NAME)
 
@@ -24,6 +25,9 @@ class Game:
         self.all_sprites.add(self.player)
         self.monster = Monster(self)
         self.all_sprites.add(self.monster)
+        self.goblin = Goblin(self)
+        self.all_sprites.add(self.goblin)
+
         for plat in PLATFORM_LIST:
             p = Platform(*plat)
             self.all_sprites.add(p)
@@ -31,7 +35,7 @@ class Game:
         self.run()
 
     def run(self):
-        # game loop
+        # game loopsh
         self.playing = True
         while self.playing:
             self.clock.tick(FPS)
@@ -50,12 +54,24 @@ class Game:
                 self.player.vel.y = 0
         # DEATH
         if self.player.rect.bottom > HEIGHT:
+            #pg.mixer.music.pause()
+            #Ensures sound only plays once
+            if self.player.rect.bottom > HEIGHT and self.player.rect.bottom < HEIGHT + 10: #
+                death_sound.play()
             for sprite in self.all_sprites:
-                sprite.rect.y -= (int)(max(self.player.vel.y, 10))
+                sprite.rect.y -= int(max(self.player.vel.y, 10))
                 if sprite.rect.bottom < 0:
                     sprite.kill()
         if len(self.platforms) == 0:
             self.playing = False
+
+        #Collisions with Mobs
+        for sprite in self.all_sprites:
+            if abs(self.player.rect.x - self.goblin.rect.x) < 10:
+                sprite.kill()
+                #pg.mixer.music.pause()
+                death_sound.play()
+
 
     def events(self):
         # game loop events
@@ -71,7 +87,7 @@ class Game:
 
     def draw(self):
         # game loop draw
-        self.screen.fill(BLACK)
+        self.screen.blit(castle_background, (0, 0))
         self.all_sprites.draw(self.screen)
         self.draw_text("LEVEL: ", 22, WHITE, WIDTH/2, 15)
         # *after* drawing everything, flip the display
@@ -88,15 +104,16 @@ class Game:
 
     def show_go_screen(self):
         # game over screen
-        pg.mixer.music.play(0)
+        #game_over_sound.play()
         if not self.running:
             return
         self.screen.blit(end_background, (0, 0))
-        self.draw_text("GAME OVER", 60, RED, WIDTH / 2, 48)
-        self.draw_text("PRESS ANY KEY TO PLAY AGAIN", 35, WHITE, WIDTH / 2, HEIGHT - 100)
-        self.draw_text("FINAL LEVEL: ", 35, WHITE, WIDTH / 2, HEIGHT / 2)
+        play_song('sounds/death_song.mp3')
         pg.display.flip()
         self.wait_for_key()
+        play_song('sounds/uzi_music.mp3')
+        game_over_sound.stop()
+       # pg.mixer.music.unpause()
 
     def wait_for_key(self):
         waiting = True
