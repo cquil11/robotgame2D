@@ -1,6 +1,7 @@
 # player and enemy classes for game
 from settings import *
 import pygame as pg
+import random
 import math
 
 vec = pg.math.Vector2
@@ -99,10 +100,11 @@ class Monster(pg.sprite.Sprite):
         # Move along this normalized vector towards the player at current speed.
         self.rect.x += dx * self.speed
         self.rect.y += dy * self.speed
+        self.speedx = 10
 
     def update(self):
         self.acc = vec(0, 0)
-        self.rect.x += 0
+        self.rect.x += self.speedx
         self.rect.y += 0
         if self.pos.x > WIDTH:
             self.vel.x = -5
@@ -112,8 +114,6 @@ class Monster(pg.sprite.Sprite):
     def shoot(self, game):
         self.game = game
         self.image = hamel_open
-
-
 
 
 class Lava(pg.sprite.Sprite):
@@ -146,7 +146,7 @@ class MonsterBullet(pg.sprite.Sprite):
         self.pos = vec(WIDTH / 2, HEIGHT / 2)
         self.rect.y = y
         self.rect.x = x
-        self.speedy = range(-5, -15)
+        self.speedy = random.randrange(-5, -15, -10)
 
     def update(self):
         self.rect.y -= self.speedy

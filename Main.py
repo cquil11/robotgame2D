@@ -28,7 +28,7 @@ class Game:
         self.monster = pg.sprite.Group()
         bullet = MonsterBullet(62, 95)
         self.monsterbullet = pg.sprite.Group()
-        # self.monsterbullet.add(bullet)
+        self.monsterbullet.add(bullet)
         self.all_sprites.add(self.player)
         self.all_sprites.add(self.monster)
         self.monster.add()
@@ -38,6 +38,7 @@ class Game:
             self.all_sprites.add(p)
             self.platforms.add(p)
         bottom_lava = Lava(0, HEIGHT - 40, 800, 20)
+        self.monsterbullet.add(bullet)
         self.all_sprites.add(bottom_lava)
         self.lava.add(bottom_lava)
         self.run()
@@ -52,8 +53,10 @@ class Game:
             self.draw()
 
     def update(self):
+        self.game_clock = pg.time.Clock()
         # game loop update
         self.all_sprites.update()
+        SCORE += 1
         # check if player hits platform
         if self.player.vel.y > 0:
             hits_plat = pg.sprite.spritecollide(self.player, self.platforms, False)
@@ -73,18 +76,18 @@ class Game:
                 # if self.player.lives == 0:
                 play_song('sounds/death_song.mp3')
                 self.playing = False
-            if hits_bullet:
+            elif hits_bullet:
                 # self.player.kill()
-                self.player.pos.y = hits_lava[0].rect.top
+                self.player.pos.y = hits_bullet[0].rect.top
                 self.player.vel.y = 0
                 for sprite in self.all_sprites:
                     sprite.rect.y -= int(max(self.player.vel.y, 10))
                 # if self.player.lives == 0:
                 play_song('sounds/death_song.mp3')
                 self.playing = False
-            if hits_monster:
+            elif hits_monster:
                 # self.player.kill()
-                self.player.pos.y = hits_lava[0].rect.top
+                self.player.pos.y = hits_monster[0].rect.top
                 self.player.vel.y = 0
                 for sprite in self.all_sprites:
                     sprite.rect.y -= int(max(self.player.vel.y, 10))
@@ -115,7 +118,7 @@ class Game:
         self.screen.fill(BLACK)
         self.all_sprites.draw(self.screen)
         self.draw_text("LEVEL: ", 20, WHITE, WIDTH * 3 / 4, HEIGHT-22)
-        self.draw_text("SCORE: ", 20, WHITE, WIDTH * 2 / 4, HEIGHT - 22)
+        self.draw_text("SCORE: " + str(SCORE), 20, WHITE, WIDTH * 2 / 4, HEIGHT - 22)
         # self.draw_lives(self.screen, 5, HEIGHT - 5, self.player.lives, pright)
         # *after* drawing everything, flip the display
         pg.display.flip()
