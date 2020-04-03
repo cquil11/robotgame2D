@@ -14,6 +14,7 @@ pleft = pg.image.load('images/player_left.png')
 pright = pg.image.load('images/player_right.png')
 hamel = pg.image.load('images/hamel_monster.png')
 hamel_open = pg.image.load('images/hamel_monster_open.png')
+castle_background = pg.image.load('images/castle_background_800x600.png')
 end_background = pg.image.load('images/game_over.png')
 platform_320 = pg.image.load('images/plat_320.png')
 platform_100 = pg.image.load('images/plat_100.png')
@@ -22,7 +23,17 @@ gleft = pg.image.load('images/Goblin2.png')
 gright = pg.image.load('images/Goblin.png')
 FONT_NAME = 'arial'
 game_over_sound = pg.mixer.Sound('sounds/game_over_sound.wav')
-game_music = pg.mixer.music.load('sounds/uzi_music.mp3')
+death_sound = pg.mixer.Sound('sounds/fuck.wav')
+#game_music = pg.mixer.music.load('sounds/uzi_music.mp3')
+songs = ['sounds/uzi_music.mp3', 'sounds/death_song.mp3']
+
+def play_song(song_name):
+
+
+    pygame.mixer.music.load(songs[songs])
+    pygame.mixer.music.play()
+
+
 
 # player property
 PLAYER_ACC = 0.9

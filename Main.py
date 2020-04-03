@@ -1,5 +1,6 @@
 import pygame as pg
 import random
+import math
 from settings import *
 from sprites import *
 import os
@@ -12,7 +13,7 @@ class Game:
         self.screen = pg.display.set_mode((WIDTH, HEIGHT))
         pg.display.set_caption("My Game")
         self.clock = pg.time.Clock()
-        pg.mixer.music.play(-1)
+        play_next_song()
         self.running = True
         self.font_name = pg.font.match_font(FONT_NAME)
 
@@ -24,6 +25,9 @@ class Game:
         self.all_sprites.add(self.player)
         self.monster = Monster(self)
         self.all_sprites.add(self.monster)
+        self.goblin = Goblin(self)
+        self.all_sprites.add(self.goblin)
+
         for plat in PLATFORM_LIST:
             p = Platform(*plat)
             self.all_sprites.add(p)
@@ -50,13 +54,24 @@ class Game:
                 self.player.vel.y = 0
         # DEATH
         if self.player.rect.bottom > HEIGHT:
-            pg.mixer.music.pause()
+            #pg.mixer.music.pause()
+            #Ensures sound only plays once
+            if self.player.rect.bottom > HEIGHT and self.player.rect.bottom < HEIGHT + 10: #
+                death_sound.play()
             for sprite in self.all_sprites:
                 sprite.rect.y -= int(max(self.player.vel.y, 10))
                 if sprite.rect.bottom < 0:
                     sprite.kill()
         if len(self.platforms) == 0:
             self.playing = False
+
+        #Collisions with Mobs
+        for sprite in self.all_sprites:
+            if abs(self.player.rect.x - self.goblin.rect.x) < 10:
+                sprite.kill()
+                #pg.mixer.music.pause()
+                death_sound.play()
+
 
     def events(self):
         # game loop events
@@ -72,7 +87,7 @@ class Game:
 
     def draw(self):
         # game loop draw
-        self.screen.blit(game_background, (0, 0))
+        self.screen.blit(castle_background, (0, 0))
         self.all_sprites.draw(self.screen)
         self.draw_text("LEVEL: ", 22, WHITE, WIDTH/2, 15)
         # *after* drawing everything, flip the display

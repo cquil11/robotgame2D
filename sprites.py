@@ -77,16 +77,17 @@ class Monster(pg.sprite.Sprite):
 
     def update(self):
         dx = self.rect.x
-        if ( dx < 0 ):
-            self.rect.x += self.velX
-        else:
-            self.rect.x -= self.velX
-            #why
+        #if ( dx < 0 ):
+        #    self.rect.x += self.velX
+        #else:
+        #   self.rect.x -= self.velX
+        #    #why
 
         if ( self.rect.x > WIDTH - 128):
-            self.velX = -self.velX
+            self.velX = self.velX
         if ( self.rect.x < 0 ):
             self.velX = -self.velX
+
 
 
     def move_towards_player(self, player):
@@ -121,5 +122,20 @@ class Goblin(pg.sprite.Sprite):
         self.game = game
         self.image = gleft
         self.rect = self.image.get_rect()
-        self.pos = vec(WIDTH /2, HEIGHT / 2)
+        self.rect.x = 0
+        self.rect.y = 550
+        self.vel = vec(3, 0)
+        self.acc = vec(0, 0)
+
+    def update(self):
+        self.acc = vec(0, PLAYER_GRAV)
+        self.vel += self.acc
+
+        if self.rect.x > 290:
+            self.vel = -self.vel
+        if self.rect.x < 0:
+            self.vel = -self.vel
+
+        self.rect.x += self.vel.x
+
 
