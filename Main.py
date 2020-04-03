@@ -56,7 +56,7 @@ class Game:
                 self.player.vel.y = 0
             # DEATH
             if hits_lava:
-                pg.mixer.music.pause()
+                play_song('sounds/death_song.mp3')
                 self.player.pos.y = hits_lava[0].rect.top
                 self.player.vel.y = 0
                 for sprite in self.all_sprites:
@@ -130,6 +130,7 @@ class Game:
                     self.running = False
                 if event.type == pg.KEYUP:
                     if event.key == pg.K_RETURN:
+                        play_song('sounds/uzi_music.mp3')
                         waiting = False
                     if event.key == pg.K_ESCAPE:
                         self.running = False
