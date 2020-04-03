@@ -134,6 +134,8 @@ class Game:
                         play_song('sounds/uzi_music.mp3')
                         waiting = False
                     if event.key == pg.K_ESCAPE:
+                        if self.playing:
+                            self.playing = False
                         self.running = False
 
     def draw_text(self, text, size, color, x, y):
