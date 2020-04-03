@@ -89,7 +89,7 @@ class Game:
                     self.player.jump()
 
     def draw(self):
-        # game loop draw
+        # game loop draw poop
         # self.screen.blit(game_background, (0, 0))
         self.screen.fill(BLACK)
         self.all_sprites.draw(self.screen)
