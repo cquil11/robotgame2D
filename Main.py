@@ -1,9 +1,9 @@
 import pygame as pg
 import random
-import math
 from settings import *
 from sprites import *
 import os
+
 
 class Game:
     def __init__(self):
@@ -13,7 +13,7 @@ class Game:
         self.screen = pg.display.set_mode((WIDTH, HEIGHT))
         pg.display.set_caption("My Game")
         self.clock = pg.time.Clock()
-        play_song('sounds/uzi_music.mp3')
+        pg.mixer.music.play(-1)
         self.running = True
         self.font_name = pg.font.match_font(FONT_NAME)
 
@@ -21,21 +21,22 @@ class Game:
         # start new game
         self.all_sprites = pg.sprite.Group()
         self.platforms = pg.sprite.Group()
+        self.lava = pg.sprite.Group()
         self.player = Player(self)
         self.all_sprites.add(self.player)
         self.monster = Monster(self)
         self.all_sprites.add(self.monster)
-        self.goblin = Goblin(self)
-        self.all_sprites.add(self.goblin)
-
         for plat in PLATFORM_LIST:
             p = Platform(*plat)
             self.all_sprites.add(p)
             self.platforms.add(p)
+        bottom_lava = Lava(0, HEIGHT - 40, 800, 20)
+        self.all_sprites.add(bottom_lava)
+        self.lava.add(bottom_lava)
         self.run()
 
     def run(self):
-        # game loopsh
+        # game loops
         self.playing = True
         while self.playing:
             self.clock.tick(FPS)
@@ -48,30 +49,28 @@ class Game:
         self.all_sprites.update()
         # check if player hits platform
         if self.player.vel.y > 0:
-            hits = pg.sprite.spritecollide(self.player, self.platforms, False)
-            if hits:
-                self.player.pos.y = hits[0].rect.top
+            hits_plat = pg.sprite.spritecollide(self.player, self.platforms, False)
+            hits_lava = pg.sprite.spritecollide(self.player, self.lava, False)
+            if hits_plat:
+                self.player.pos.y = hits_plat[0].rect.top
                 self.player.vel.y = 0
+            # DEATH
+            if hits_lava:
+                pg.mixer.music.pause()
+                self.player.pos.y = hits_lava[0].rect.top
+                self.player.vel.y = 0
+                for sprite in self.all_sprites:
+                    sprite.rect.y -= int(max(self.player.vel.y, 10))
+                self.playing = False
         # DEATH
-        if self.player.rect.bottom > HEIGHT:
-            #pg.mixer.music.pause()
-            #Ensures sound only plays once
-            if self.player.rect.bottom > HEIGHT and self.player.rect.bottom < HEIGHT + 10: #
-                death_sound.play()
-            for sprite in self.all_sprites:
-                sprite.rect.y -= int(max(self.player.vel.y, 10))
-                if sprite.rect.bottom < 0:
-                    sprite.kill()
-        if len(self.platforms) == 0:
-            self.playing = False
-
-        #Collisions with Mobs
-        for sprite in self.all_sprites:
-            if abs(self.player.rect.x - self.goblin.rect.x) < 10:
-                sprite.kill()
-                #pg.mixer.music.pause()
-                death_sound.play()
-
+        # if self.player.rect.bottom > HEIGHT:
+            #    pg.mixer.music.pause()
+            # for sprite in self.all_sprites:
+            #   sprite.rect.y -= int(max(self.player.vel.y, 10))
+                #    if sprite.rect.bottom < 0:
+        #    sprite.kill()
+        # if len(self.platforms) == 0:
+        #   self.playing = False #
 
     def events(self):
         # game loop events
@@ -84,36 +83,42 @@ class Game:
             if event.type == pg.KEYDOWN:
                 if event.key == pg.K_SPACE:
                     self.player.jump()
+                if event.key == pg.K_UP:
+                    self.player.jump()
+                if event.key == pg.K_w:
+                    self.player.jump()
 
     def draw(self):
         # game loop draw
-        self.screen.blit(castle_background, (0, 0))
+        # self.screen.blit(game_background, (0, 0))
+        self.screen.fill(BLACK)
         self.all_sprites.draw(self.screen)
-        self.draw_text("LEVEL: ", 22, WHITE, WIDTH/2, 15)
+        self.draw_text("LEVEL: ", 20, WHITE, WIDTH * 3 / 4, HEIGHT-5)
         # *after* drawing everything, flip the display
         pg.display.flip()
 
     def show_start_screen(self):
         # game start screen
         self.screen.blit(start_background1, (0, 0))
-        self.draw_text(TITLE, 48, RED, WIDTH / 2, 48)
-        self.draw_text("Use left and right arrow keys to move and space to jump", 20, RED, WIDTH / 2, HEIGHT - 50)
-        self.draw_text("PRESS ANY KEY TO PLAY", 20, RED, WIDTH / 2, HEIGHT / 2)
         pg.display.flip()
         self.wait_for_key()
 
+    def show_pause_screen(self):
+        # game start screen
+         self.screen.blit(start_background1, (0, 0))
+         pg.display.flip()
+         self.wait_for_key()
+
     def show_go_screen(self):
         # game over screen
-        #game_over_sound.play()
+        game_over_sound.play()
         if not self.running:
             return
         self.screen.blit(end_background, (0, 0))
-        play_song('sounds/death_song.mp3')
         pg.display.flip()
         self.wait_for_key()
-        play_song('sounds/uzi_music.mp3')
         game_over_sound.stop()
-       # pg.mixer.music.unpause()
+        pg.mixer.music.unpause()
 
     def wait_for_key(self):
         waiting = True
@@ -124,7 +129,10 @@ class Game:
                     waiting = False
                     self.running = False
                 if event.type == pg.KEYUP:
-                    waiting = False
+                    if event.key == pg.K_RETURN:
+                        waiting = False
+                    if event.key == pg.K_ESCAPE:
+                        self.running = False
 
     def draw_text(self, text, size, color, x, y):
         font = pg.font.Font(self.font_name, size)

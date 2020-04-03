@@ -27,10 +27,10 @@ class Player(pg.sprite.Sprite):
     def update(self):
         self.acc = vec(0, PLAYER_GRAV)
         keys = pg.key.get_pressed()
-        if keys[pg.K_LEFT]:
+        if keys[pg.K_LEFT] | keys[pg.K_a]:
             self.acc.x = -PLAYER_ACC
             self.image = pleft
-        if keys[pg.K_RIGHT]:
+        if keys[pg.K_RIGHT] | keys[pg.K_d]:
             self.acc.x = PLAYER_ACC
             self.image = pright
 
@@ -47,6 +47,17 @@ class Player(pg.sprite.Sprite):
             self.pos.x = WIDTH
 
         self.rect.midbottom = self.pos
+
+
+class PlayerImage(pg.sprite.Sprite):
+    def __init__(self, x, y, w, h):
+        pg.sprite.Sprite.__init__(self)
+        self.image = pg.Surface((w, h))
+        self.rect = self.image.get_rect()
+        self.image = lava
+        self.rect = self.image.get_rect()
+        self.rect.x = x
+        self.rect.y = y
 
 
 class Platform(pg.sprite.Sprite):
@@ -77,18 +88,16 @@ class Monster(pg.sprite.Sprite):
 
     def update(self):
         dx = self.rect.x
-        #if ( dx < 0 ):
-        #    self.rect.x += self.velX
-        #else:
-        #   self.rect.x -= self.velX
-        #    #why
+        if dx < 0:
+            self.rect.x += self.velX
+        else:
+            self.rect.x -= self.velX
+            #why
 
-        if ( self.rect.x > WIDTH - 128):
-            self.velX = self.velX
-        if ( self.rect.x < 0 ):
+        if self.rect.x > WIDTH - 128:
             self.velX = -self.velX
-
-
+        if self.rect.x < 0:
+            self.velX = -self.velX
 
     def move_towards_player(self, player):
         dx = player.rect.x - self.rect.x
@@ -104,7 +113,15 @@ class Monster(pg.sprite.Sprite):
         self.pos += self.vel + 0.5 * self.acc
 
 
-
+class Lava(pg.sprite.Sprite):
+    def __init__(self, x, y, w, h):
+        pg.sprite.Sprite.__init__(self)
+        self.image = pg.Surface((w, h))
+        self.rect = self.image.get_rect()
+        self.image = lava
+        self.rect = self.image.get_rect()
+        self.rect.x = x
+        self.rect.y = y
 
 
 class MonsterBullet(pg.sprite.Sprite):
@@ -122,20 +139,5 @@ class Goblin(pg.sprite.Sprite):
         self.game = game
         self.image = gleft
         self.rect = self.image.get_rect()
-        self.rect.x = 0
-        self.rect.y = 550
-        self.vel = vec(3, 0)
-        self.acc = vec(0, 0)
-
-    def update(self):
-        self.acc = vec(0, PLAYER_GRAV)
-        self.vel += self.acc
-
-        if self.rect.x > 290:
-            self.vel = -self.vel
-        if self.rect.x < 0:
-            self.vel = -self.vel
-
-        self.rect.x += self.vel.x
-
+        self.pos = vec(WIDTH /2, HEIGHT / 2)
 
