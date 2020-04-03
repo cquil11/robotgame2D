@@ -25,7 +25,7 @@ gright = pg.image.load('images/Goblin.png')
 FONT_NAME = 'arial'
 game_over_sound = pg.mixer.Sound('sounds/game_over_sound.wav')
 death_sound = pg.mixer.Sound('sounds/fuck.wav')
-#game_music = pg.mixer.music.load('sounds/uzi_music.mp3')
+game_music = pg.mixer.music.load('sounds/uzi_music.mp3')
 songs = ['sounds/uzi_music.mp3', 'sounds/death_song.mp3']
 
 def play_song(song_name):
