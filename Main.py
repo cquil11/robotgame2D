@@ -7,6 +7,7 @@ import os
 
 
 class Game:
+    score = 0
     def __init__(self):
         # initialize game windows
         pg.init()
@@ -49,14 +50,14 @@ class Game:
         while self.playing:
             self.clock.tick(FPS)
             self.events()
-            self.update()
+            self.update(self.score)
             self.draw()
 
-    def update(self):
+    def update(self, score):
         self.game_clock = pg.time.Clock()
         # game loop update
         self.all_sprites.update()
-        SCORE += 1
+        score += 1
         # check if player hits platform
         if self.player.vel.y > 0:
             hits_plat = pg.sprite.spritecollide(self.player, self.platforms, False)

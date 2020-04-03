@@ -34,6 +34,7 @@ current_song = None
 SCORE = 0
 
 
+
 # def draw_lives(surf, x, y, lives, img):
     # for i in range(lives):
         # img_rect = img.get_rect()
