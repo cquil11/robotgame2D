@@ -129,7 +129,7 @@ class Coin(pg.sprite.Sprite):
         pg.sprite.Sprite.__init__(self)
         self.image = pg.Surface((w, h))
         self.rect = self.image.get_rect()
-        self.image = lava
+        self.image = coin
         self.rect = self.image.get_rect()
         self.rect.x = x
         self.rect.y = y

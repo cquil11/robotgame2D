@@ -22,6 +22,7 @@ class Game:
         self.all_sprites = pg.sprite.Group()
         self.platforms = pg.sprite.Group()
         self.lava = pg.sprite.Group()
+        self.coins = pg.sprite.Group()
         self.player = Player(self)
         self.all_sprites.add(self.player)
         self.monster = Monster(self)
@@ -62,15 +63,6 @@ class Game:
                 for sprite in self.all_sprites:
                     sprite.rect.y -= int(max(self.player.vel.y, 10))
                 self.playing = False
-        # DEATH
-        # if self.player.rect.bottom > HEIGHT:
-            #    pg.mixer.music.pause()
-            # for sprite in self.all_sprites:
-            #   sprite.rect.y -= int(max(self.player.vel.y, 10))
-                #    if sprite.rect.bottom < 0:
-        #    sprite.kill()
-        # if len(self.platforms) == 0:
-        #   self.playing = False #
 
     def events(self):
         # game loop events
@@ -99,15 +91,21 @@ class Game:
 
     def show_start_screen(self):
         # game start screen
-        self.screen.blit(start_background1, (0, 0))
+        self.playing = True
+        if pg.time.get_ticks() % 4 == 0:
+            self.screen.blit(start_background0, (0, 0))
+        if pg.time.get_ticks() % 4 == 1:
+            self.screen.blit(start_background1, (0, 0))
+        if pg.time.get_ticks() % 4 == 2:
+            self.screen.blit(start_background2, (0, 0))
+        if pg.time.get_ticks() % 4 == 3:
+            self.screen.blit(start_background3, (0, 0))
         pg.display.flip()
         self.wait_for_key()
 
     def show_pause_screen(self):
         # game start screen
-         self.screen.blit(start_background1, (0, 0))
-         pg.display.flip()
-         self.wait_for_key()
+        pass
 
     def show_go_screen(self):
         # game over screen
