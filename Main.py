@@ -111,8 +111,9 @@ class Game:
         play_song('sounds/death_song.mp3')
         pg.display.flip()
         self.wait_for_key()
+        play_song('sounds/uzi_music.mp3')
         game_over_sound.stop()
-        pg.mixer.music.unpause()
+       # pg.mixer.music.unpause()
 
     def wait_for_key(self):
         waiting = True
