@@ -29,10 +29,16 @@ class Player(pg.sprite.Sprite):
         keys = pg.key.get_pressed()
         if keys[pg.K_LEFT] | keys[pg.K_a]:
             self.acc.x = -PLAYER_ACC
-            self.image = pleft
+            if self.vel.y >= 0:
+                self.image = pleft
+            if self.vel.y < 0:
+                self.image = pleftj
         if keys[pg.K_RIGHT] | keys[pg.K_d]:
             self.acc.x = PLAYER_ACC
-            self.image = pright
+            if self.vel.y >= 0:
+                self.image = pright
+            if self.vel.y < 0:
+                self.image = prightj
 
         # slows player down over time
         self.acc.x += self.vel.x * PLAYER_FRICTION
@@ -90,7 +96,10 @@ class Monster(pg.sprite.Sprite):
         self.rect = self.image.get_rect()
         self.rect.x = 0
         self.rect.y = 20
-        self.velX = 5
+        self.pos = vec(WIDTH / 2, HEIGHT / 2)
+        self.vel = vec(0, 0)
+        self.acc = vec(0, 0)
+        self.vel.x = 5
 
     def move_towards_player(self, player):
         # Find direction vector (dx, dy) between enemy and player.
@@ -104,8 +113,10 @@ class Monster(pg.sprite.Sprite):
     def update(self):
         self.rect.x += 0
         self.rect.y += 0
-
-
+        if self.pos.x > WIDTH:
+            self.vel.x = -5
+        if self.pos.x < 0:
+            self.pos.x = 5
 
 
 class Lava(pg.sprite.Sprite):
@@ -134,18 +145,24 @@ class MonsterBullet(pg.sprite.Sprite):
     def __init__(self, game):
         pg.sprite.Sprite.__init__(self)
         self.game = game
-        self.image = hamel_open
+        self.image = lava_ball
         self.rect = self.image.get_rect()
         self.pos = vec(WIDTH / 2, HEIGHT / 2)
 
 
 class Goblin(pg.sprite.Sprite):
-    def __init__(self, game):
-        pg.sprite.Sprite.__init__(self)
+    def __init__(self, game, plat):
+        pg.sprite.Sprite.__init__(self, self.groups)
         self.game = game
+        self.image_left = gleft
+        self.image_right = gright
         self.image = gleft
         self.rect = self.image.get_rect()
+        self.vx = 3
+
         self.pos = vec(WIDTH /2, HEIGHT / 2)
+
+
 
 
 

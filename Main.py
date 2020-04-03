@@ -13,7 +13,7 @@ class Game:
         self.screen = pg.display.set_mode((WIDTH, HEIGHT))
         pg.display.set_caption("My Game")
         self.clock = pg.time.Clock()
-        play_song('sounds/uzi_music.mp3')
+        play_song('sounds/computer_startup.mp3')
         self.running = True
         self.font_name = pg.font.match_font(FONT_NAME)
 
@@ -85,7 +85,8 @@ class Game:
         # self.screen.blit(game_background, (0, 0))
         self.screen.fill(BLACK)
         self.all_sprites.draw(self.screen)
-        self.draw_text("LEVEL: ", 20, WHITE, WIDTH * 3 / 4, HEIGHT-5)
+        self.draw_text("LEVEL: ", 20, WHITE, WIDTH * 3 / 4, HEIGHT-22)
+        self.draw_text("SCORE: ", 20, WHITE, WIDTH * 2 / 4, HEIGHT - 22)
         # *after* drawing everything, flip the display
         pg.display.flip()
 
@@ -95,9 +96,11 @@ class Game:
         self.playing = True
 
         for bg in backgrounds:
-            self.screen.blit(bg, (0,0))
+            self.screen.blit(bg, (0, 0))
             pg.time.wait(1000)
-            #test
+            print(pg.time.get_ticks())
+            # test
+        play_song('sounds/uzi_music.mp3')
         pg.display.flip()
         self.wait_for_key()
 
@@ -126,8 +129,8 @@ class Game:
                     self.running = False
                 if event.type == pg.KEYUP:
                     print(current_song)
-                    if event.key == pg.K_RETURN and current_song != 'sounds/uzi_music.mp3':
-                        play_song('sounds/uzi_music.mp3')
+                    if event.key == pg.K_RETURN and current_song != 'sounds/game_music.mp3':
+                        play_song('sounds/game_music.mp3')
                         waiting = False
                     if event.key == pg.K_ESCAPE:
                         if self.playing:
