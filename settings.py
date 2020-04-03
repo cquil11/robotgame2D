@@ -15,7 +15,9 @@ pright = pg.image.load('images/player_right.png')
 hamel = pg.image.load('images/hamel_monster.png')
 hamel_open = pg.image.load('images/hamel_monster_open.png')
 end_background = pg.image.load('images/game_over.png')
-platform_skin = pg.image.load('images/platform.png')
+platform_320 = pg.image.load('images/plat_320.png')
+platform_100 = pg.image.load('images/plat_100.png')
+platform_150 = pg.image.load('images/plat_150.png')
 gleft = pg.image.load('images/Goblin2.png')
 gright = pg.image.load('images/Goblin.png')
 FONT_NAME = 'arial'
@@ -35,8 +37,10 @@ BOSS_DECEL = -0.10
 
 # default platforms
 PLATFORM_LIST = [(0, HEIGHT - 20, WIDTH / 2 - 80, 20),
-                 (WIDTH / 2 + 80, HEIGHT - 20, WIDTH / 2 - 50, 20),
-                 (WIDTH / 2 - 50, HEIGHT * 3 / 4, 100, 20)]
+                 (WIDTH / 2 + 80, HEIGHT - 20, WIDTH / 2 - 80, 20),
+                 (WIDTH / 2 - 50, HEIGHT * 3 / 4, 100, 20),
+                 (50, HEIGHT * 5 / 8, 150, 20),
+                 (WIDTH-200, HEIGHT * 5 / 8, 150, 20)]
 # define colors and backgrounds
 WHITE = (255, 255, 255)
 BLACK = (0, 0, 0)

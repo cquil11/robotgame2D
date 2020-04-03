@@ -54,7 +54,12 @@ class Platform(pg.sprite.Sprite):
         pg.sprite.Sprite.__init__(self)
         self.image = pg.Surface((w, h))
         self.rect = self.image.get_rect()
-        self.image.fill(GREEN)
+        if w == 320:
+            self.image = platform_320
+        if w == 100:
+            self.image = platform_100
+        if w == 150:
+            self.image = platform_150
         self.rect.x = x
         self.rect.y = y
 
