@@ -29,6 +29,11 @@ death_sound = pg.mixer.Sound('sounds/fuck.wav')
 songs = ['sounds/uzi_music.mp3', 'sounds/death_song.mp3']
 current_song = None
 
+backgrounds = [pg.image.load('images/start_background1.png'),
+               pg.image.load('images/start_background2.png'),
+               pg.image.load('images/start_background3.png'),
+               pg.image.load('images/start_background4.png')]
+
 
 def play_song(song_name):
     global current_song

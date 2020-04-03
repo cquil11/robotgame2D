@@ -48,6 +48,12 @@ class Player(pg.sprite.Sprite):
 
         self.rect.midbottom = self.pos
 
+    def get_pos_x(self):
+        return self.rect.x
+
+    def get_pos_y(self):
+        return self.rect.y
+
 
 class PlayerImage(pg.sprite.Sprite):
     def __init__(self, x, y, w, h):
@@ -86,31 +92,20 @@ class Monster(pg.sprite.Sprite):
         self.rect.y = 20
         self.velX = 5
 
-    def update(self):
-        dx = self.rect.x
-        if dx < 0:
-            self.rect.x += self.velX
-        else:
-            self.rect.x -= self.velX
-            #why
-
-        if self.rect.x > WIDTH - 128:
-            self.velX = -self.velX
-        if self.rect.x < 0:
-            self.velX = -self.velX
-
     def move_towards_player(self, player):
-        dx = player.rect.x - self.rect.x
+        # Find direction vector (dx, dy) between enemy and player.
+        dx, dy = player.rect.x - self.rect.x, player.rect.y - self.rect.y
+        dist = math.hypot(dx, dy)
+        dx, dy = dx / dist, dy / dist  # Normalize.
+        # Move along this normalized vector towards the player at current speed.
+        self.rect.x += dx * self.speed
+        self.rect.y += dy * self.speed
 
-        print(dx)
+    def update(self):
+        self.rect.x += 0
+        self.rect.y += 0
 
-        if dx < 0:
-            self.acc = BOSS_ACC
-        else:
-            self.acc = -BOSS_ACC
 
-        self.vel += self.acc
-        self.pos += self.vel + 0.5 * self.acc
 
 
 class Lava(pg.sprite.Sprite):
@@ -151,4 +146,7 @@ class Goblin(pg.sprite.Sprite):
         self.image = gleft
         self.rect = self.image.get_rect()
         self.pos = vec(WIDTH /2, HEIGHT / 2)
+
+
+
 

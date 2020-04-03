@@ -91,16 +91,13 @@ class Game:
 
     def show_start_screen(self):
         # game start screen
+        clock = pg.time.Clock()
         self.playing = True
-        if (pg.time.get_ticks() % 2000) <= 500:
-            self.screen.blit(start_background0, (0, 0))
-        if (pg.time.get_ticks() % 2000) <= 1000:
-            self.screen.blit(start_background1, (0, 0))
-        # if (pg.time.get_ticks() % 2000) <= 1500:
-        #    self.screen.blit(start_background2, (0, 0))
-        # if (pg.time.get_ticks() % 2000) <= 2000:
-        #    self.screen.blit(start_background3, (0, 0))
 
+        for bg in backgrounds:
+            self.screen.blit(bg, (0,0))
+            pg.time.wait(1000)
+            #test
         pg.display.flip()
         self.wait_for_key()
 
