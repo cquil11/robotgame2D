@@ -32,10 +32,19 @@ death_sound = pg.mixer.Sound('sounds/fuck.wav')
 songs = ['sounds/uzi_music.mp3', 'sounds/death_song.mp3', 'sounds/computer_startup.mp3', 'sounds/game_music.mp3']
 current_song = None
 
+
+# def draw_lives(surf, x, y, lives, img):
+    # for i in range(lives):
+        # img_rect = img.get_rect()
+        # img_rect.x = x + 25 * i
+        # img_rect.y = y
+        # surf.blit(img, img_rect)
+
+
 backgrounds = [pg.image.load('images/start_background1.png'),
                pg.image.load('images/start_background2.png'),
-               pg.image.load('images/start_background3.png'),
-               pg.image.load('images/start_background4.png')]
+               pg.image.load('images/start_background4.png'),
+               pg.image.load('images/start_background3.png')]
 
 
 def play_song(song_name):

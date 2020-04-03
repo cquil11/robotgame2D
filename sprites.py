@@ -15,6 +15,7 @@ class Player(pg.sprite.Sprite):
         self.pos = vec(WIDTH /2, HEIGHT / 2)
         self.vel = vec(0, 0)
         self.acc = vec(0, 0)
+        self.lives = 3
 
     def jump(self):
         # only jump if on platform
@@ -61,17 +62,6 @@ class Player(pg.sprite.Sprite):
         return self.rect.y
 
 
-class PlayerImage(pg.sprite.Sprite):
-    def __init__(self, x, y, w, h):
-        pg.sprite.Sprite.__init__(self)
-        self.image = pg.Surface((w, h))
-        self.rect = self.image.get_rect()
-        self.image = lava
-        self.rect = self.image.get_rect()
-        self.rect.x = x
-        self.rect.y = y
-
-
 class Platform(pg.sprite.Sprite):
     def __init__(self, x, y, w, h):
         pg.sprite.Sprite.__init__(self)
@@ -111,12 +101,19 @@ class Monster(pg.sprite.Sprite):
         self.rect.y += dy * self.speed
 
     def update(self):
+        self.acc = vec(0, 0)
         self.rect.x += 0
         self.rect.y += 0
         if self.pos.x > WIDTH:
             self.vel.x = -5
         if self.pos.x < 0:
             self.pos.x = 5
+
+    def shoot(self, game):
+        self.game = game
+        self.image = hamel_open
+
+
 
 
 class Lava(pg.sprite.Sprite):
@@ -142,12 +139,21 @@ class Coin(pg.sprite.Sprite):
 
 
 class MonsterBullet(pg.sprite.Sprite):
-    def __init__(self, game):
+    def __init__(self, x, y):
         pg.sprite.Sprite.__init__(self)
-        self.game = game
         self.image = lava_ball
         self.rect = self.image.get_rect()
         self.pos = vec(WIDTH / 2, HEIGHT / 2)
+        self.rect.y = y
+        self.rect.x = x
+        self.speedy = range(-5, -15)
+
+    def update(self):
+        self.rect.y -= self.speedy
+        if self.rect.y > HEIGHT - 45:
+            self.kill()
+        if self.rect.x < 0 | self.rect.x > WIDTH:
+            self.kill()
 
 
 class Goblin(pg.sprite.Sprite):
