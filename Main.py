@@ -13,7 +13,7 @@ class Game:
         self.screen = pg.display.set_mode((WIDTH, HEIGHT))
         pg.display.set_caption("My Game")
         self.clock = pg.time.Clock()
-        pg.mixer.music.play(-1)
+        play_song('sounds/uzi_music.mp3')
         self.running = True
         self.font_name = pg.font.match_font(FONT_NAME)
 
@@ -129,7 +129,8 @@ class Game:
                     waiting = False
                     self.running = False
                 if event.type == pg.KEYUP:
-                    if event.key == pg.K_RETURN:
+                    print(current_song)
+                    if event.key == pg.K_RETURN and current_song != 'sounds/uzi_music.mp3':
                         play_song('sounds/uzi_music.mp3')
                         waiting = False
                     if event.key == pg.K_ESCAPE:
