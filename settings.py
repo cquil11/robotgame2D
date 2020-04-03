@@ -29,9 +29,9 @@ songs = ['sounds/uzi_music.mp3', 'sounds/death_song.mp3']
 
 def play_song(song_name):
 
-
-    pygame.mixer.music.load(songs[songs])
-    pygame.mixer.music.play()
+    queued_song = songs.index(song_name)
+    pg.mixer.music.load(songs[queued_song])
+    pg.mixer.music.play(-1)
 
 
 

@@ -13,7 +13,7 @@ class Game:
         self.screen = pg.display.set_mode((WIDTH, HEIGHT))
         pg.display.set_caption("My Game")
         self.clock = pg.time.Clock()
-        play_next_song()
+        play_song('sounds/uzi_music.mp3')
         self.running = True
         self.font_name = pg.font.match_font(FONT_NAME)
 
@@ -104,10 +104,11 @@ class Game:
 
     def show_go_screen(self):
         # game over screen
-        game_over_sound.play()
+        #game_over_sound.play()
         if not self.running:
             return
         self.screen.blit(end_background, (0, 0))
+        play_song('sounds/death_song.mp3')
         pg.display.flip()
         self.wait_for_key()
         game_over_sound.stop()
