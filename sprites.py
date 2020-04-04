@@ -174,7 +174,7 @@ class Goblin(pg.sprite.Sprite):
         #Goblin is 20px wide and 30px tall
         i = 2
         while i == 2:
-            i = random.randrange(4)
+            i = random.randrange(5)
 
         y_pos = PLATFORM_LIST[i][1] - 30
         x_pos = random.randrange(PLATFORM_LIST[i][0], PLATFORM_LIST[i][0] + PLATFORM_LIST[i][2])
