@@ -22,12 +22,12 @@ class Game:
 
     def new(self):
         # start new game
+        self.score = 0
         self.all_sprites = pg.sprite.Group()
         self.platforms = pg.sprite.Group()
         self.lava = pg.sprite.Group()
         self.goblins = pg.sprite.Group()
         self.coins = pg.sprite.Group()
-
         for i in range(0, 5):
             goblin = Goblin()
             self.all_sprites.add(goblin)
@@ -42,7 +42,6 @@ class Game:
             coin = Coin()
             self.all_sprites.add(coin)
             self.coins.add(coin)
-        self.coins = pg.sprite.Group()
         self.player = Player(self)
         self.monster = pg.sprite.Group()
         bullet = MonsterBullet(62, 95)
@@ -60,24 +59,21 @@ class Game:
         self.monsterbullet.add(bullet)
         self.all_sprites.add(bottom_lava)
         self.lava.add(bottom_lava)
-        self.all_sprites.add(goblin)
         self.run()
 
     def run(self):
         # game loops
-
         self.playing = True
         while self.playing:
             self.clock.tick(FPS)
             self.events()
-            self.update(self.score)
+            self.update()
             self.draw()
 
-    def update(self, score):
+    def update(self):
         self.game_clock = pg.time.Clock()
         # game loop update
         self.all_sprites.update()
-        score += 1
         # check if player hits platform
         if self.player.vel.y > 0:
             hits_plat = pg.sprite.spritecollide(self.player, self.platforms, False)
@@ -90,17 +86,15 @@ class Game:
                 self.player.pos.y = hits_plat[0].rect.top
                 self.player.vel.y = 0
             if hits_coin:
-                score += 100
-                coin.kill()
-                return score
+                self.score += 100
+                self.coins.remove(coin)
+                print("coin hit")
             # DEATH
             if hits_lava:
                 self.player.pos.y = hits_lava[0].rect.bottom
                 self.player.vel.y = 0
-                for sprite in self.all_sprites:
-                    sprite.rect.y -= int(max(self.player.vel.y, 10))
                 pg.mixer.music.stop()
-                self.player.hearts -= 100
+                self.player.hearts -= 10
                 if self.player.hearts < 0:
                     lava_burning_sound.play()
                     scream_sound.play()
@@ -116,7 +110,7 @@ class Game:
                     self.playing = False
             elif hits_goblin:
                 # if self.player.lives == 0:
-                self.player.hearts -= 2.5
+                self.player.hearts -= 4
                 death_sound_HIT.play()
                 if self.player.hearts < 0:
                     pg.mixer.music.stop()
@@ -149,9 +143,9 @@ class Game:
         # self.screen.blit(game_background, (0, 0))
         self.screen.fill(BLACK)
         self.all_sprites.draw(self.screen)
-        self.draw_text("LEVEL: ", 20, WHITE, WIDTH * 3 / 4, HEIGHT-22)
-        self.draw_text("SCORE: " + str(SCORE), 20, WHITE, WIDTH * 2 / 4, HEIGHT - 22)
-        self.draw_text("HEALTH: " + str(self.player.hearts), 20, WHITE, WIDTH * 1 / 4, HEIGHT - 22)
+        self.draw_text("LEVEL: ", 20, WHITE, WIDTH * 3 / 4 + 100, HEIGHT-22)
+        self.draw_text("SCORE: " + str(self.score), 20, WHITE, WIDTH * 2 / 4 + 100, HEIGHT - 22)
+        self.draw_text("HEALTH: " + str(self.player.hearts), 20, WHITE, WIDTH * 1 / 4 + 100, HEIGHT - 22)
         # self.draw_lives(self.screen, 5, HEIGHT - 5, self.player.lives, pright)
         # *after* drawing everything, flip the display
         pg.display.flip()

@@ -155,6 +155,11 @@ class Coin(pg.sprite.Sprite):
         self.rect.y = y_pos
         self.rect.x = x_pos
 
+    """def update(self):
+        hits = pg.sprite.spritecollide(self, Player, False)
+        if hits:
+            self.kill()"""
+
 
 class MonsterBullet(pg.sprite.Sprite):
     def __init__(self, x, y):
@@ -199,9 +204,6 @@ class Goblin(pg.sprite.Sprite):
         self.spawn_platform = PLATFORM_LIST[i]
         self.rect.y = y_pos
         self.rect.x = x_pos
-
-
-
 
     def update(self):
         for gob in goblins_arr:
