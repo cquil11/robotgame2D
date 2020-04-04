@@ -95,35 +95,34 @@ class Game:
                 return score
             # DEATH
             if hits_lava:
-                self.player.pos.y = hits_lava[0].rect.top
+                self.player.pos.y = hits_lava[0].rect.bottom
                 self.player.vel.y = 0
                 for sprite in self.all_sprites:
                     sprite.rect.y -= int(max(self.player.vel.y, 10))
-                # if self.player.lives == 0:
                 pg.mixer.music.stop()
-                lava_burning_sound.play()
-                pg.time.wait(2500)
-                play_song('sounds/death_song.mp3')
-                self.playing = False
-            elif hits_bullet:
-                self.player.vel.y = 0
-                """for sprite in self.all_sprites:
-                    sprite.rect.y -= int(max(self.player.vel.y, 10))"""
-                self.player.hearts -= 5
-                if self.player.hearts <= 0:
-                    pg.time.wait(2500)
+                self.player.hearts -= 100
+                if self.player.hearts < 0:
+                    lava_burning_sound.play()
+                    scream_sound.play()
+                    pg.time.wait(10500)
                     play_song('sounds/death_song.mp3')
+                    self.playing = False
+            elif hits_bullet:
+                self.player.hearts -= 5
+                if self.player.hearts < 0:
+                    pg.mixer.music.stop()
+                    play_song('sounds/death_song.mp3')
+                    pg.time.wait(500)
                     self.playing = False
             elif hits_goblin:
                 # if self.player.lives == 0:
-
                 self.player.hearts -= 2.5
                 death_sound_HIT.play()
-            if self.player.hearts <= 0:
-                pg.mixer.music.stop()
-                pg.time.wait(2000)
-                play_song('sounds/death_song.mp3')
-                self.playing = False
+                if self.player.hearts < 0:
+                    pg.mixer.music.stop()
+                    play_song('sounds/death_song.mp3')
+                    pg.time.wait(500)
+                    self.playing = False
 
     def events(self):
         # game loop events
@@ -177,6 +176,7 @@ class Game:
 
     def show_go_screen(self):
         # game over screen
+        goblins_arr.clear()
         game_over_sound.play()
         if not self.running:
             return
