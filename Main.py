@@ -111,6 +111,7 @@ class Game:
                     sprite.rect.y -= int(max(self.player.vel.y, 10))
                 self.player.hearts -= 5
                 if self.player.hearts <= 0:
+                    pg.time.wait(2500)
                     play_song('sounds/death_song.mp3')
                     self.playing = False
             elif hits_goblin:
@@ -119,6 +120,8 @@ class Game:
                 self.player.hearts -= 2.5
                 death_sound_HIT.play()
             if self.player.hearts <= 0:
+                pg.mixer.music.stop()
+                pg.time.wait(2000)
                 play_song('sounds/death_song.mp3')
                 self.playing = False
 
