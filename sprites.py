@@ -29,10 +29,10 @@ class Player(pg.sprite.Sprite):
             self.image = pright
 
     def hit(self):
-        if self.vel.x < 0:
-            self.image = plefth
-        if self.vel.x > 0:
+        if self.image == pright:
             self.image = prighth
+        if self.image == pleft:
+            self.image = plefth
 
     def update(self):
         self.acc = vec(0, PLAYER_GRAV)

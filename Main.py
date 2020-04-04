@@ -107,8 +107,8 @@ class Game:
                 self.playing = False
             elif hits_bullet:
                 self.player.vel.y = 0
-                for sprite in self.all_sprites:
-                    sprite.rect.y -= int(max(self.player.vel.y, 10))
+                """for sprite in self.all_sprites:
+                    sprite.rect.y -= int(max(self.player.vel.y, 10))"""
                 self.player.hearts -= 5
                 if self.player.hearts <= 0:
                     pg.time.wait(2500)
