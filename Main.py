@@ -25,7 +25,7 @@ class Game:
         self.platforms = pg.sprite.Group()
         self.lava = pg.sprite.Group()
         self.goblins = pg.sprite.Group()
-        for i in range(0,9):
+        for i in range(0, 3):
             goblin = Goblin()
             goblins.append(goblin)
             self.all_sprites.add(goblin)
@@ -73,6 +73,7 @@ class Game:
             hits_plat = pg.sprite.spritecollide(self.player, self.platforms, False)
             hits_lava = pg.sprite.spritecollide(self.player, self.lava, False)
             hits_bullet = pg.sprite.spritecollide(self.player, self.monsterbullet, False)
+            hits_goblin = pg.sprite.spritecollide(self.player, self.goblins, False)
             """hits_monster = pg.sprite.spritecollide(self.player, self.monster, False)"""
             if hits_plat:
                 self.player.pos.y = hits_plat[0].rect.top
@@ -96,15 +97,15 @@ class Game:
                 # if self.player.lives == 0:
                 play_song('sounds/death_song.mp3')
                 self.playing = False
-            """elif hits_monster:
+            elif hits_goblin:
                 # self.player.kill()
-                self.player.pos.y = hits_monster[0].rect.top
+                self.player.pos.y = hits_goblin[0].rect.top
                 self.player.vel.y = 0
                 for sprite in self.all_sprites:
                     sprite.rect.y -= int(max(self.player.vel.y, 10))
                 # if self.player.lives == 0:
                 play_song('sounds/death_song.mp3')
-                self.playing = False"""
+                self.playing = False
 
     def events(self):
         # game loop events
