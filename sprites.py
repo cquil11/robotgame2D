@@ -174,7 +174,7 @@ class Goblin(pg.sprite.Sprite):
         self.image_right = gright
         self.image = gleft
         self.rect = self.image.get_rect()
-        self.vx = 2
+        self.vx = random.randrange(2, 6)
         self.x_upper_bound = 0
 
         #Goblin is 20px wide and 30px tall
@@ -198,7 +198,11 @@ class Goblin(pg.sprite.Sprite):
     def update(self):
         for gob in goblins_arr:
             for i in range(0, len(goblins_arr)):
-                if gob is not goblins_arr[i] and abs(gob.rect.x - goblins_arr[i].rect.x) < 20:
+                diff_sign = False
+                if gob is not goblins_arr[i].vx and gob.vx < 0 and goblins_arr[i].vx > 0 or gob.vx > 0 and goblins_arr[i].vx < 0:
+                    diff_sign = True
+                if gob is not goblins_arr[i] and abs(gob.rect.x - goblins_arr[i].rect.x) < 20 \
+                        and abs(gob.rect.y - goblins_arr[i].rect.y) < 20:
                     self.vx = -self.vx
                     goblins_arr[i].vx = -goblins_arr[i].vx
         if self.rect.x > self.x_upper_bound:
@@ -206,6 +210,7 @@ class Goblin(pg.sprite.Sprite):
         if self.rect.x < self.x_lower_bound:
             self.vx = -self.vx
         self.rect.x += self.vx
+
 
 
 
