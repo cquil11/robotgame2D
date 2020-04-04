@@ -36,7 +36,7 @@ class Game:
         self.monsterbullet.add(bullet)
         self.all_sprites.add(self.player)
         self.all_sprites.add(self.monster)
-       # self.monster.add()
+        # self.monster.add()
         self.all_sprites.add(self.monsterbullet)
         for plat in PLATFORM_LIST:
             p = Platform(*plat)

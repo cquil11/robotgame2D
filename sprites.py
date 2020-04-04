@@ -171,7 +171,7 @@ class Goblin(pg.sprite.Sprite):
         self.rect = self.image.get_rect()
         self.vx = 3
 
-        #Goblin is 30px tall
+        #Goblin is 20px wide and 30px tall
         i = 2
         while i == 2:
             i = random.randrange(4)
