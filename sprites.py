@@ -17,6 +17,7 @@ class Player(pg.sprite.Sprite):
         self.vel = vec(0, 0)
         self.acc = vec(0, 0)
         self.lives = 3
+        self.hearts = float(100)
 
     def jump(self):
         # only jump if on platform
