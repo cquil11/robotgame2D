@@ -202,6 +202,11 @@ class Goblin(pg.sprite.Sprite):
         if self.rect.x < self.x_lower_bound:
             self.vx = -self.vx
         self.rect.x += self.vx
+        if self.vx < 0:
+            self.image = gleft
+        if self.vx > 0:
+            self.image = gright
+
 
 
 

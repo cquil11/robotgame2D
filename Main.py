@@ -27,7 +27,7 @@ class Game:
         self.lava = pg.sprite.Group()
         self.goblins = pg.sprite.Group()
 
-        for i in range(0, 6):
+        for i in range(0, 5):
             goblin = Goblin()
             self.all_sprites.add(goblin)
             self.goblins.add(goblin)
@@ -106,7 +106,7 @@ class Game:
             elif hits_goblin:
                 # if self.player.lives == 0:
 
-                self.player.hearts -= 0.5
+                self.player.hearts -= 2.5
                 death_sound_HIT.play()
             if self.player.hearts <= 0:
                 play_song('sounds/death_song.mp3')
