@@ -124,10 +124,13 @@ class Game:
                 self.running = False
             if event.type == pg.KEYDOWN:
                 if event.key == pg.K_SPACE:
+                    jump_sound.play()
                     self.player.jump()
                 if event.key == pg.K_UP:
+                    jump_sound.play()
                     self.player.jump()
                 if event.key == pg.K_w:
+                    jump_sound.play()
                     self.player.jump()
 
     def draw(self):
