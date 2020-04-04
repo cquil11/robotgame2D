@@ -59,7 +59,7 @@ def play_song(song_name):
 
 # player property
 PLAYER_ACC = 0.9
-PLAYER_FRICTION = -0.12
+PLAYER_FRICTION = -0.13
 PLAYER_GRAV = 0.8
 PLAYER_JUMP = -15
 
