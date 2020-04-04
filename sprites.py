@@ -172,9 +172,11 @@ class Goblin(pg.sprite.Sprite):
         self.vx = 3
 
         #Goblin is 30px tall
-        i = random.randrange(5)
+        i = 2
+        while i == 2:
+            i = random.randrange(4)
+
         y_pos = PLATFORM_LIST[i][1] - 30
-        print(i)
         x_pos = random.randrange(PLATFORM_LIST[i][0], PLATFORM_LIST[i][0] + PLATFORM_LIST[i][2])
         self.rect.y = y_pos
         self.rect.x = x_pos
