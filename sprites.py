@@ -198,10 +198,9 @@ class Goblin(pg.sprite.Sprite):
     def update(self):
         for gob in goblins_arr:
             for i in range(0, len(goblins_arr)):
-                if gob is not goblins_arr[i] and abs(gob.rect.x - goblins_arr[i].rect.x) < 50:
-                    gob.vx = -gob.vx
+                if gob is not goblins_arr[i] and abs(gob.rect.x - goblins_arr[i].rect.x) < 20:
+                    self.vx = -self.vx
                     goblins_arr[i].vx = -goblins_arr[i].vx
-
         if self.rect.x > self.x_upper_bound:
             self.vx = -self.vx
         if self.rect.x < self.x_lower_bound:
