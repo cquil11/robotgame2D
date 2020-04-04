@@ -193,8 +193,6 @@ class Goblin(pg.sprite.Sprite):
         self.rect.x = x_pos
 
 
-
-
     def update(self):
         for gob in goblins_arr:
             for i in range(0, len(goblins_arr)):
