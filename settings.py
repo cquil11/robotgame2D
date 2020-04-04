@@ -32,6 +32,7 @@ game_over_sound = pg.mixer.Sound('sounds/game_over_sound.wav')
 death_sound = pg.mixer.Sound('sounds/fuck.wav')
 jump_sound = pg.mixer.Sound('sounds/jump_sound2.wav')
 death_sound_HIT = pg.mixer.Sound('sounds/death_sound.wav')
+lava_burning_sound = pg.mixer.Sound('sounds/burning_sound.wav')
 
 
 songs = ['sounds/uzi_music.mp3', 'sounds/death_song.mp3', 'sounds/computer_startup.mp3', 'sounds/game_music.mp3']
@@ -61,6 +62,7 @@ def play_song(song_name):
     queued_song = songs.index(song_name)
     pg.mixer.music.load(songs[queued_song])
     pg.mixer.music.play(-1)
+
 
 
 # player property

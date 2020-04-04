@@ -56,7 +56,6 @@ class Game:
         self.all_sprites.add(bottom_lava)
         self.lava.add(bottom_lava)
         self.all_sprites.add(goblin)
-        self.lava.add(goblin)
         self.run()
 
     def run(self):
@@ -92,6 +91,9 @@ class Game:
                 for sprite in self.all_sprites:
                     sprite.rect.y -= int(max(self.player.vel.y, 10))
                 # if self.player.lives == 0:
+                pg.mixer.music.stop()
+                lava_burning_sound.play()
+                pg.time.wait(2500)
                 play_song('sounds/death_song.mp3')
                 self.playing = False
             elif hits_bullet:
