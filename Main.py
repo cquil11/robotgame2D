@@ -25,10 +25,12 @@ class Game:
         self.platforms = pg.sprite.Group()
         self.lava = pg.sprite.Group()
         self.goblins = pg.sprite.Group()
+
         for i in range(0, 3):
             goblin = Goblin()
             goblins.append(goblin)
             self.all_sprites.add(goblin)
+            self.goblins.add(goblin)
             print(str(goblins))
 
         self.coins = pg.sprite.Group()
@@ -139,18 +141,18 @@ class Game:
         # game start screen
         start_screen_timer = pg.time.get_ticks()
         self.playing = True
-
-        for bg in backgrounds:
+        self.screen.blit(start_background2, (0, 0))
+        """for bg in backgrounds:
             self.screen.blit(bg, (0, 0))
             pg.time.wait(1000)
             print(pg.time.get_ticks())
-            # test
+            # test"""
         play_song('sounds/uzi_music.mp3')
         pg.display.flip()
         self.wait_for_key()
 
     def show_pause_screen(self):
-        # game start screen
+        # game pause screen
         pass
 
     def show_go_screen(self):
