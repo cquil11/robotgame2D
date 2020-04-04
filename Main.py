@@ -26,7 +26,7 @@ class Game:
         self.lava = pg.sprite.Group()
         for i in range(0,9):
             self.goblin = pg.sprite.Group()
-            goblin = Goblin(700, 200)
+            goblin = Goblin()
             self.all_sprites.add(goblin)
         self.coins = pg.sprite.Group()
         self.player = Player(self)
