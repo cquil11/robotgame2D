@@ -169,7 +169,7 @@ class Goblin(pg.sprite.Sprite):
         self.image_right = gright
         self.image = gleft
         self.rect = self.image.get_rect()
-        self.vx = 3
+        self.speedx = 10
 
         #Goblin is 20px wide and 30px tall
         i = 2
@@ -182,6 +182,11 @@ class Goblin(pg.sprite.Sprite):
         self.spawn_platform = PLATFORM_LIST[i]
         self.rect.y = y_pos
         self.rect.x = x_pos
+        self.speedx = 10
+
+    def update(self):
+        self.rect.x += self.speedx
+
 
 
 
