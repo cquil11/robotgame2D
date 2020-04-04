@@ -169,7 +169,7 @@ class Goblin(pg.sprite.Sprite):
         self.image_right = gright
         self.image = gleft
         self.rect = self.image.get_rect()
-        self.vx = 3
+        self.vx = 2
         self.x_upper_bound = 0
 
         #Goblin is 20px wide and 30px tall
@@ -187,7 +187,7 @@ class Goblin(pg.sprite.Sprite):
         self.rect.y = y_pos
         self.rect.x = x_pos
 
-#
+
     def update(self):
         if self.rect.x > self.x_upper_bound:
             self.vx = -self.vx
