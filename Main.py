@@ -24,10 +24,12 @@ class Game:
         self.all_sprites = pg.sprite.Group()
         self.platforms = pg.sprite.Group()
         self.lava = pg.sprite.Group()
+        self.goblin = pg.sprite.Group()
         self.coins = pg.sprite.Group()
         self.player = Player(self)
         self.monster = pg.sprite.Group()
         bullet = MonsterBullet(62, 95)
+        goblin = Goblin(400, 300)
         self.monsterbullet = pg.sprite.Group()
         self.monsterbullet.add(bullet)
         self.all_sprites.add(self.player)
@@ -42,6 +44,8 @@ class Game:
         self.monsterbullet.add(bullet)
         self.all_sprites.add(bottom_lava)
         self.lava.add(bottom_lava)
+        self.all_sprites.add(goblin)
+        self.lava.add(goblin)
         self.run()
 
     def run(self):
@@ -63,7 +67,7 @@ class Game:
             hits_plat = pg.sprite.spritecollide(self.player, self.platforms, False)
             hits_lava = pg.sprite.spritecollide(self.player, self.lava, False)
             hits_bullet = pg.sprite.spritecollide(self.player, self.monsterbullet, False)
-            hits_monster = pg.sprite.spritecollide(self.player, self.monster, False)
+            """hits_monster = pg.sprite.spritecollide(self.player, self.monster, False)"""
             if hits_plat:
                 self.player.pos.y = hits_plat[0].rect.top
                 self.player.vel.y = 0
@@ -86,7 +90,7 @@ class Game:
                 # if self.player.lives == 0:
                 play_song('sounds/death_song.mp3')
                 self.playing = False
-            elif hits_monster:
+            """elif hits_monster:
                 # self.player.kill()
                 self.player.pos.y = hits_monster[0].rect.top
                 self.player.vel.y = 0
@@ -94,7 +98,7 @@ class Game:
                     sprite.rect.y -= int(max(self.player.vel.y, 10))
                 # if self.player.lives == 0:
                 play_song('sounds/death_song.mp3')
-                self.playing = False
+                self.playing = False"""
 
     def events(self):
         # game loop events

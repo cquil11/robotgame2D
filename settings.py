@@ -35,12 +35,12 @@ SCORE = 0
 
 
 
-# def draw_lives(surf, x, y, lives, img):
-    # for i in range(lives):
-        # img_rect = img.get_rect()
-        # img_rect.x = x + 25 * i
-        # img_rect.y = y
-        # surf.blit(img, img_rect)
+"""def draw_lives(surf, x, y, lives, img):
+    for i in range(lives):
+        img_rect = img.get_rect()
+        img_rect.x = x + 25 * i
+        img_rect.y = y
+        surf.blit(img, img_rect)"""
 
 
 backgrounds = [pg.image.load('images/start_background1.png'),

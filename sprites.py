@@ -79,6 +79,15 @@ class Platform(pg.sprite.Sprite):
 
 
 class Monster(pg.sprite.Sprite):
+    def __init__(self, x, y):
+        pg.sprite.Sprite.__init__(self)
+        self.image = hamel_monster
+        self.rect = self.image.get_rect()
+        self.rect.x = x
+        self.rect.y = y
+
+
+"""class Monster(pg.sprite.Sprite):
     def __init__(self, game):
         pg.sprite.Sprite.__init__(self)
         self.game = game
@@ -93,21 +102,22 @@ class Monster(pg.sprite.Sprite):
         # Find direction vector (dx, dy) between enemy and player.
         dx, dy = player.rect.x - self.rect.x, player.rect.y - self.rect.y
         dist = math.hypot(dx, dy)
-        dx, dy = dx / dist, dy / dist  # Normalize.
+        dx, dy = dx / dist, dy / dist 
+        # Normalize.
         # Move along this normalized vector towards the player at current speed.
         self.rect.x += dx * self.speed
         self.rect.y += dy * self.speed
 
-    def update(self):
-        self.acc = vec(0, 0)
-        if self.pos.x > WIDTH:
-            self.speedx = -10
-        if self.pos.x < 0:
-            self.speedx = 10
+    # def update(self):
+        # self.acc = vec(0, 0)
+        # if self.pos.x > WIDTH:
+            # self.speedx = -10
+        # if self.pos.x < 0:
+            # self.speedx = 10
 
     # def shoot(self, game):
         # self.game = game
-        # self.image = hamel_open
+        # self.image = hamel_open"""
 
 
 class Lava(pg.sprite.Sprite):
@@ -153,13 +163,14 @@ class MonsterBullet(pg.sprite.Sprite):
 
 
 class Goblin(pg.sprite.Sprite):
-    def __init__(self, game, plat):
+    def __init__(self, x, y):
         pg.sprite.Sprite.__init__(self, self.groups)
-        self.game = game
         self.image_left = gleft
         self.image_right = gright
         self.image = gleft
         self.rect = self.image.get_rect()
+        self.rect.y = y
+        self.rect.x = x
         self.vx = 3
 
         self.pos = vec(WIDTH /2, HEIGHT / 2)
