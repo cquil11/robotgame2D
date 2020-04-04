@@ -26,7 +26,7 @@ class Game:
         self.lava = pg.sprite.Group()
         self.goblins = pg.sprite.Group()
 
-        for i in range(0, 4):
+        for i in range(0, 3):
             goblin = Goblin()
             self.all_sprites.add(goblin)
             self.goblins.add(goblin)
@@ -36,7 +36,6 @@ class Game:
         print(goblins_arr[0].spawn_platform)
         print(goblins_arr[1].rect.x)
         print(goblins_arr[2].rect.x)
-
         self.coins = pg.sprite.Group()
         self.player = Player(self)
         self.monster = pg.sprite.Group()
@@ -85,7 +84,6 @@ class Game:
                 self.player.vel.y = 0
             # DEATH
             if hits_lava:
-                # self.player.kill()
                 self.player.pos.y = hits_lava[0].rect.top
                 self.player.vel.y = 0
                 for sprite in self.all_sprites:
@@ -97,17 +95,14 @@ class Game:
                 play_song('sounds/death_song.mp3')
                 self.playing = False
             elif hits_bullet:
-                # self.player.kill()
                 self.player.vel.y = 0
                 for sprite in self.all_sprites:
                     sprite.rect.y -= int(max(self.player.vel.y, 10))
-                # if self.player.lives == 0:
-                play_song('sounds/death_song.mp3')
-                self.playing = False
+                self.player.hearts -= 5
+                if self.player.hearts <= 0:
+                    play_song('sounds/death_song.mp3')
+                    self.playing = False
             elif hits_goblin:
-                # self.player.kill()
-                #for sprite in self.all_sprites:
-                 #   sprite.rect.y -= int(max(self.player.vel.y, 10))
                 # if self.player.lives == 0:
                 self.player.hearts -= 0.5
                 death_sound_HIT.play()

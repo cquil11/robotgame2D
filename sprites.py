@@ -26,6 +26,7 @@ class Player(pg.sprite.Sprite):
         self.rect.y -= 1
         if hits:
             self.vel.y = PLAYER_JUMP
+            self.image = pright
 
     def hit(self):
         pass
@@ -202,7 +203,8 @@ class Goblin(pg.sprite.Sprite):
             self.image = gright
         if self.vx < 0:
             self.image = gleft
-
+        if Player.get_pos_x(self) == self.rect.x:
+            self.vx = -self.vx
 
 
 
