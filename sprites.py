@@ -193,18 +193,22 @@ class Goblin(pg.sprite.Sprite):
         self.rect.x = x_pos
 
 
+
+
     def update(self):
+        for gob in goblins_arr:
+            for i in range(0, len(goblins_arr)):
+                if gob is not goblins_arr[i] and abs(gob.rect.x - goblins_arr[i].rect.x) < 50:
+                    gob.vx = -gob.vx
+                    goblins_arr[i].vx = -goblins_arr[i].vx
+
         if self.rect.x > self.x_upper_bound:
             self.vx = -self.vx
         if self.rect.x < self.x_lower_bound:
             self.vx = -self.vx
         self.rect.x += self.vx
-        if self.vx > 0:
-            self.image = gright
-        if self.vx < 0:
-            self.image = gleft
-        if Player.get_pos_x(self) == self.rect.x:
-            self.vx = -self.vx
+
+
 
 
 

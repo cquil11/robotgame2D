@@ -4,6 +4,7 @@ import random
 from settings import *
 from sprites import *
 import os
+import time
 
 
 class Game:
@@ -104,6 +105,7 @@ class Game:
                     self.playing = False
             elif hits_goblin:
                 # if self.player.lives == 0:
+
                 self.player.hearts -= 0.5
                 death_sound_HIT.play()
             if self.player.hearts <= 0:
