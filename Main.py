@@ -175,7 +175,7 @@ class Game:
         font = pg.font.Font(self.font_name, size)
         text_surface = font.render(text, True, color)
         text_rect = text_surface.get_rect()
-        text_rect.midtop = (x, y)
+        text_rect.midtop = (int(x), int(y))
         self.screen.blit(text_surface, text_rect)
 
 

@@ -78,19 +78,16 @@ class Platform(pg.sprite.Sprite):
         self.rect.y = y
 
 
-# test
 class Monster(pg.sprite.Sprite):
     def __init__(self, game):
         pg.sprite.Sprite.__init__(self)
         self.game = game
-        self.image = hamel
+        self.image = hamel_monster
         self.rect = self.image.get_rect()
-        self.rect.x = 0
-        self.rect.y = 20
         self.pos = vec(WIDTH / 2, HEIGHT / 2)
         self.vel = vec(0, 0)
         self.acc = vec(0, 0)
-        self.vel.x = 5
+        self.speedx = 10
 
     def move_towards_player(self, player):
         # Find direction vector (dx, dy) between enemy and player.
@@ -100,20 +97,17 @@ class Monster(pg.sprite.Sprite):
         # Move along this normalized vector towards the player at current speed.
         self.rect.x += dx * self.speed
         self.rect.y += dy * self.speed
-        self.speedx = 10
 
     def update(self):
         self.acc = vec(0, 0)
-        self.rect.x += self.speedx
-        self.rect.y += 0
         if self.pos.x > WIDTH:
-            self.vel.x = -5
+            self.speedx = -10
         if self.pos.x < 0:
-            self.pos.x = 5
+            self.speedx = 10
 
-    def shoot(self, game):
-        self.game = game
-        self.image = hamel_open
+    # def shoot(self, game):
+        # self.game = game
+        # self.image = hamel_open
 
 
 class Lava(pg.sprite.Sprite):
@@ -146,11 +140,13 @@ class MonsterBullet(pg.sprite.Sprite):
         self.pos = vec(WIDTH / 2, HEIGHT / 2)
         self.rect.y = y
         self.rect.x = x
-        self.speedy = random.randrange(-5, -15, -10)
+        self.speedx = random.randrange(-10, 10)
+        self.speedy = random.randrange(5, 15)
 
     def update(self):
-        self.rect.y -= self.speedy
-        if self.rect.y > HEIGHT - 45:
+        self.rect.y += self.speedy
+        self.rect.x -= self.speedx
+        if self.rect.y > HEIGHT - 60:
             self.kill()
         if self.rect.x < 0 | self.rect.x > WIDTH:
             self.kill()
