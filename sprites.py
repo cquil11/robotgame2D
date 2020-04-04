@@ -164,16 +164,21 @@ class MonsterBullet(pg.sprite.Sprite):
 
 class Goblin(pg.sprite.Sprite):
     def __init__(self, x, y):
-        pg.sprite.Sprite.__init__(self, self.groups)
+        pg.sprite.Sprite.__init__(self)
         self.image_left = gleft
         self.image_right = gright
         self.image = gleft
         self.rect = self.image.get_rect()
-        self.rect.y = y
-        self.rect.x = x
         self.vx = 3
 
-        self.pos = vec(WIDTH /2, HEIGHT / 2)
+        #Goblin is 30px tall
+        i = random.randrange(5)
+        y_pos = PLATFORM_LIST[i][1] - 30
+        print(i)
+        x_pos = random.randrange(PLATFORM_LIST[i][0], PLATFORM_LIST[i][0] + PLATFORM_LIST[i][2])
+        self.rect.y = y_pos
+        self.rect.x = x_pos
+
 
 
 

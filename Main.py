@@ -29,12 +29,12 @@ class Game:
         self.player = Player(self)
         self.monster = pg.sprite.Group()
         bullet = MonsterBullet(62, 95)
-        goblin = Goblin(400, 300)
+        goblin = Goblin(700, 200)
         self.monsterbullet = pg.sprite.Group()
         self.monsterbullet.add(bullet)
         self.all_sprites.add(self.player)
         self.all_sprites.add(self.monster)
-        self.monster.add()
+       # self.monster.add()
         self.all_sprites.add(self.monsterbullet)
         for plat in PLATFORM_LIST:
             p = Platform(*plat)
@@ -50,6 +50,7 @@ class Game:
 
     def run(self):
         # game loops
+
         self.playing = True
         while self.playing:
             self.clock.tick(FPS)
