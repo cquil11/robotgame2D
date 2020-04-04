@@ -163,7 +163,7 @@ class MonsterBullet(pg.sprite.Sprite):
 
 
 class Goblin(pg.sprite.Sprite):
-    def __init__(self, x, y):
+    def __init__(self):
         pg.sprite.Sprite.__init__(self)
         self.image_left = gleft
         self.image_right = gright
