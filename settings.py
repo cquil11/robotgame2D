@@ -14,6 +14,8 @@ pleft = pg.image.load('images/player_left.png')
 pright = pg.image.load('images/player_right.png')
 pleftj = pg.image.load('images/player_jump_left.png')
 prightj = pg.image.load('images/player_jump_right.png')
+plefth = pg.image.load('images/player_hit_left.png')
+prighth = pg.image.load('images/player_hit_right.png')
 hamel_monster = pg.image.load('images/hamel_monster.png')
 hamel_open = pg.image.load('images/hamel_monster_open.png')
 castle_background = pg.image.load('images/castle_background_800x600.png')
@@ -33,6 +35,7 @@ death_sound = pg.mixer.Sound('sounds/fuck.wav')
 jump_sound = pg.mixer.Sound('sounds/jump_sound2.wav')
 death_sound_HIT = pg.mixer.Sound('sounds/death_sound.wav')
 lava_burning_sound = pg.mixer.Sound('sounds/burning_sound.wav')
+sword_swing = pg.mixer.Sound('sounds/sword_sound.wav')
 
 
 songs = ['sounds/uzi_music.mp3', 'sounds/death_song.mp3', 'sounds/computer_startup.mp3', 'sounds/game_music.mp3']

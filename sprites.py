@@ -29,7 +29,10 @@ class Player(pg.sprite.Sprite):
             self.image = pright
 
     def hit(self):
-        pass
+        if self.vel.x < 0:
+            self.image = plefth
+        if self.vel.x > 0:
+            self.image = prighth
 
     def update(self):
         self.acc = vec(0, PLAYER_GRAV)
@@ -137,14 +140,20 @@ class Lava(pg.sprite.Sprite):
 
 
 class Coin(pg.sprite.Sprite):
-    def __init__(self, x, y, w, h):
+    def __init__(self):
         pg.sprite.Sprite.__init__(self)
-        self.image = pg.Surface((w, h))
-        self.rect = self.image.get_rect()
         self.image = coin
         self.rect = self.image.get_rect()
-        self.rect.x = x
-        self.rect.y = y
+        self.x_upper_bound = 0
+        # Coin is 10px wide and 10px tall
+        j = 2
+        while j == 2:
+            j = random.randrange(5)
+
+        y_pos = PLATFORM_LIST[j][1] - 15
+        x_pos = random.randrange(PLATFORM_LIST[j][0], PLATFORM_LIST[j][0] + PLATFORM_LIST[j][2] - 10)
+        self.rect.y = y_pos
+        self.rect.x = x_pos
 
 
 class MonsterBullet(pg.sprite.Sprite):

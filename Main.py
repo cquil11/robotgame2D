@@ -26,6 +26,7 @@ class Game:
         self.platforms = pg.sprite.Group()
         self.lava = pg.sprite.Group()
         self.goblins = pg.sprite.Group()
+        self.coins = pg.sprite.Group()
 
         for i in range(0, 5):
             goblin = Goblin()
@@ -37,6 +38,10 @@ class Game:
         print(goblins_arr[0].spawn_platform)
         print(goblins_arr[1].rect.x)
         print(goblins_arr[2].rect.x)
+        for i in range(0, 4):
+            coin = Coin()
+            self.all_sprites.add(coin)
+            self.coins.add(coin)
         self.coins = pg.sprite.Group()
         self.player = Player(self)
         self.monster = pg.sprite.Group()
@@ -79,10 +84,15 @@ class Game:
             hits_lava = pg.sprite.spritecollide(self.player, self.lava, False)
             hits_bullet = pg.sprite.spritecollide(self.player, self.monsterbullet, False)
             hits_goblin = pg.sprite.spritecollide(self.player, self.goblins, False)
+            hits_coin = pg.sprite.spritecollide(self.player, self.coins, False)
             """hits_monster = pg.sprite.spritecollide(self.player, self.monster, False)"""
             if hits_plat:
                 self.player.pos.y = hits_plat[0].rect.top
                 self.player.vel.y = 0
+            if hits_coin:
+                score += 100
+                coin.kill()
+                return score
             # DEATH
             if hits_lava:
                 self.player.pos.y = hits_lava[0].rect.top
@@ -123,8 +133,8 @@ class Game:
                 self.running = False
             if event.type == pg.KEYDOWN:
                 if event.key == pg.K_SPACE:
-                    jump_sound.play()
-                    self.player.jump()
+                    sword_swing.play()
+                    self.player.hit()
                 if event.key == pg.K_UP:
                     jump_sound.play()
                     self.player.jump()
