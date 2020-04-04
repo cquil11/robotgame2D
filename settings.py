@@ -44,6 +44,7 @@ coin_sound = pg.mixer.Sound('sounds/coin_pickup.wav')
 songs = ['sounds/uzi_music.mp3', 'sounds/death_song.mp3', 'sounds/computer_startup.mp3', 'sounds/game_music.mp3']
 current_song = None
 goblins_arr = []
+coin_arr = []
 
 
 

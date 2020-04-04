@@ -29,7 +29,7 @@ class Game:
         self.lava = pg.sprite.Group()
         self.goblins = pg.sprite.Group()
         self.coins = pg.sprite.Group()
-        for i in range(0, 5):
+        for i in range(0, 3):
             goblin = Goblin()
             self.all_sprites.add(goblin)
             self.goblins.add(goblin)
@@ -44,6 +44,7 @@ class Game:
             coin = Coin(self)
             self.all_sprites.add(coin)
             self.coins.add(coin)
+            coin_arr.append(coin)
         self.player = Player(self)
         self.monster = pg.sprite.Group()
         bullet = MonsterBullet(62, 95)

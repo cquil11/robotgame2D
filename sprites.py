@@ -165,14 +165,20 @@ class Coin(pg.sprite.Sprite):
             coin_sound.play()
             self.game.coin_count -= 1
             self.kill()"""
-        if self.rect.x == self.game.player.get_pos_x() or self.rect.x == self.game.player.get_pos_x() + 5 \
+        """if self.rect.x == self.game.player.get_pos_x() or self.rect.x == self.game.player.get_pos_x() + 5 \
                 or self.rect.x == self.game.player.get_pos_x() - 5:
-            """if self.rect.y == self.game.player.get_pos_y() or self.rect.y == self.game.player.get_pos_y() - 15 \
-                    or self.rect.y == self.game.player.get_pos_y() + 15:"""
-            self.game.score += 100
-            coin_sound.play()
-            self.game.coin_count -= 1
-            self.kill()
+            if self.rect.y - 15 == self.game.player.get_pos_y() or self.rect.y == self.game.player.get_pos_y() - 24 \
+                    or self.rect.y == self.game.player.get_pos_y() + 24:
+                self.game.score += 100
+                coin_sound.play()
+                self.game.coin_count -= 1
+                self.kill()"""
+        for coi in coin_arr:
+            if coi.rect.x == self.game.player.get_pos_x() and coi.rect.y - 25 == self.game.player.get_pos_y():
+                self.game.score += 100
+                coin_sound.play()
+                self.game.coin_count -= 1
+                coi.kill()
 
 
 class MonsterBullet(pg.sprite.Sprite):
