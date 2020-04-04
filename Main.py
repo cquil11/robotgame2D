@@ -108,6 +108,7 @@ class Game:
                  #   sprite.rect.y -= int(max(self.player.vel.y, 10))
                 # if self.player.lives == 0:
                 self.player.hearts -= 0.5
+                death_sound_HIT.play()
             if self.player.hearts <= 0:
                 play_song('sounds/death_song.mp3')
                 self.playing = False
