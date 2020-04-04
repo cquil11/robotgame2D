@@ -67,7 +67,7 @@ class Player(pg.sprite.Sprite):
     def get_pos_y(self):
         return self.rect.y
 
-
+#push note
 class Platform(pg.sprite.Sprite):
     def __init__(self, x, y, w, h):
         pg.sprite.Sprite.__init__(self)
