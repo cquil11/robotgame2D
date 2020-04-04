@@ -174,10 +174,9 @@ class Goblin(pg.sprite.Sprite):
         self.image_right = gright
         self.image = gleft
         self.rect = self.image.get_rect()
-        self.vx = 2
+        self.vx = random.randrange(3, 4)
         self.x_upper_bound = 0
-
-        #Goblin is 20px wide and 30px tall
+        # Goblin is 20px wide and 30px tall
         i = 2
         while i == 2:
             i = random.randrange(5)
@@ -191,7 +190,6 @@ class Goblin(pg.sprite.Sprite):
         self.spawn_platform = PLATFORM_LIST[i]
         self.rect.y = y_pos
         self.rect.x = x_pos
-
 
     def update(self):
         for gob in goblins_arr:
