@@ -187,6 +187,7 @@ class Goblin(pg.sprite.Sprite):
         self.rect.y = y_pos
         self.rect.x = x_pos
 
+#
     def update(self):
         if self.rect.x > self.x_upper_bound:
             self.vx = -self.vx
