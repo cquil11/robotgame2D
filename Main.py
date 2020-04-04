@@ -8,7 +8,7 @@ import time
 
 
 class Game:
-    score = 0
+
     def __init__(self):
         # initialize game windows
         pg.init()
@@ -23,6 +23,7 @@ class Game:
     def new(self):
         # start new game
         self.score = 0
+        self.coin_count = 0
         self.all_sprites = pg.sprite.Group()
         self.platforms = pg.sprite.Group()
         self.lava = pg.sprite.Group()
@@ -39,7 +40,8 @@ class Game:
         print(goblins_arr[1].rect.x)
         print(goblins_arr[2].rect.x)
         for i in range(0, 4):
-            coin = Coin()
+            self.coin_count += 1
+            coin = Coin(self)
             self.all_sprites.add(coin)
             self.coins.add(coin)
         self.player = Player(self)
@@ -52,7 +54,7 @@ class Game:
         # self.monster.add()
         self.all_sprites.add(self.monsterbullet)
         for plat in PLATFORM_LIST:
-            p = Platform(*plat)
+            p = Platform(self, *plat)
             self.all_sprites.add(p)
             self.platforms.add(p)
         bottom_lava = Lava(0, HEIGHT - 40, 800, 20)
@@ -75,20 +77,20 @@ class Game:
         # game loop update
         self.all_sprites.update()
         # check if player hits platform
+        print(self.coin_count)
+        if self.coin_count == 0:
+            self.playing = False
         if self.player.vel.y > 0:
             hits_plat = pg.sprite.spritecollide(self.player, self.platforms, False)
             hits_lava = pg.sprite.spritecollide(self.player, self.lava, False)
             hits_bullet = pg.sprite.spritecollide(self.player, self.monsterbullet, False)
             hits_goblin = pg.sprite.spritecollide(self.player, self.goblins, False)
-            hits_coin = pg.sprite.spritecollide(self.player, self.coins, False)
-            """hits_monster = pg.sprite.spritecollide(self.player, self.monster, False)"""
+            """hits_coin = pg.sprite.spritecollide(self.player, self.coins, False)
+            hits_sword = pg.sprite.spritecollide(self.player, self.goblins, False)
+            hits_monster = pg.sprite.spritecollide(self.player, self.monster, False)"""
             if hits_plat:
                 self.player.pos.y = hits_plat[0].rect.top
                 self.player.vel.y = 0
-            if hits_coin:
-                self.score += 100
-                self.coins.remove(coin)
-                print("coin hit")
             # DEATH
             if hits_lava:
                 self.player.pos.y = hits_lava[0].rect.bottom
@@ -132,10 +134,8 @@ class Game:
                     sword_swing.play()
                     self.player.hit()
                 if event.key == pg.K_UP:
-                    jump_sound.play()
                     self.player.jump()
                 if event.key == pg.K_w:
-                    jump_sound.play()
                     self.player.jump()
 
     def draw(self):
@@ -180,8 +180,18 @@ class Game:
         game_over_sound.stop()
         pg.mixer.music.unpause()
 
+    def show_lc_screen(self):
+        # level complete screen
+        goblins_arr.clear()
+        if not self.running:
+            return
+        self.screen.blit(level_background, (0, 0))
+        pg.display.flip()
+        self.wait_for_key()
+
     def wait_for_key(self):
         waiting = True
+        self.level_complete = False
         while waiting:
             self.clock.tick(FPS)
             for event in pg.event.get():
@@ -197,6 +207,7 @@ class Game:
                         if self.playing:
                             self.playing = False
                         self.running = False
+                        waiting = False
 
     def draw_text(self, text, size, color, x, y):
         font = pg.font.Font(self.font_name, size)
@@ -210,6 +221,8 @@ g = Game()
 g.show_start_screen()
 while g.running:
     g.new()
+    if g.coin_count == 0:
+        g.show_lc_screen()
     g.show_go_screen()
 
 pg.QUIT

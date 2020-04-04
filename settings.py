@@ -20,6 +20,7 @@ hamel_monster = pg.image.load('images/hamel_monster.png')
 hamel_open = pg.image.load('images/hamel_monster_open.png')
 castle_background = pg.image.load('images/castle_background_800x600.png')
 end_background = pg.image.load('images/game_over.png')
+level_background = pg.image.load('images/level_complete.png')
 platform_320 = pg.image.load('images/plat_320.png')
 platform_100 = pg.image.load('images/plat_100.png')
 platform_150 = pg.image.load('images/plat_150.png')
@@ -37,6 +38,7 @@ death_sound_HIT = pg.mixer.Sound('sounds/death_sound.wav')
 lava_burning_sound = pg.mixer.Sound('sounds/burning_sound.wav')
 sword_swing = pg.mixer.Sound('sounds/sword_sound.wav')
 scream_sound = pg.mixer.Sound('sounds/death_scream.wav')
+coin_sound = pg.mixer.Sound('sounds/coin_pickup.wav')
 
 
 songs = ['sounds/uzi_music.mp3', 'sounds/death_song.mp3', 'sounds/computer_startup.mp3', 'sounds/game_music.mp3']

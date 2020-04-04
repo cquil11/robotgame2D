@@ -25,6 +25,7 @@ class Player(pg.sprite.Sprite):
         hits = pg.sprite.spritecollide(self, self.game.platforms, False)
         self.rect.y -= 1
         if hits:
+            jump_sound.play()
             self.vel.y = PLAYER_JUMP
             self.image = pright
 
@@ -72,8 +73,9 @@ class Player(pg.sprite.Sprite):
 
 
 class Platform(pg.sprite.Sprite):
-    def __init__(self, x, y, w, h):
+    def __init__(self, game, x, y, w, h):
         pg.sprite.Sprite.__init__(self)
+        self.game = game
         self.image = pg.Surface((w, h))
         self.rect = self.image.get_rect()
         if w == 320:
@@ -140,8 +142,9 @@ class Lava(pg.sprite.Sprite):
 
 
 class Coin(pg.sprite.Sprite):
-    def __init__(self):
+    def __init__(self, game):
         pg.sprite.Sprite.__init__(self)
+        self.game = game
         self.image = coin
         self.rect = self.image.get_rect()
         self.x_upper_bound = 0
@@ -155,10 +158,21 @@ class Coin(pg.sprite.Sprite):
         self.rect.y = y_pos
         self.rect.x = x_pos
 
-    """def update(self):
-        hits = pg.sprite.spritecollide(self, Player, False)
-        if hits:
+    def update(self):
+        """hits_coin = pg.sprite.spritecollide(self.game.player, self.game.coins, False)
+        if hits_coin:
+            self.game.score += 100
+            coin_sound.play()
+            self.game.coin_count -= 1
             self.kill()"""
+        if self.rect.x == self.game.player.get_pos_x() or self.rect.x == self.game.player.get_pos_x() + 5 \
+                or self.rect.x == self.game.player.get_pos_x() - 5:
+            """if self.rect.y == self.game.player.get_pos_y() or self.rect.y == self.game.player.get_pos_y() - 15 \
+                    or self.rect.y == self.game.player.get_pos_y() + 15:"""
+            self.game.score += 100
+            coin_sound.play()
+            self.game.coin_count -= 1
+            self.kill()
 
 
 class MonsterBullet(pg.sprite.Sprite):
