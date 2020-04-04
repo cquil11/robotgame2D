@@ -170,6 +170,7 @@ class Goblin(pg.sprite.Sprite):
         self.image = gleft
         self.rect = self.image.get_rect()
         self.vx = 3
+        self.x_upper_bound = 0
 
         #Goblin is 20px wide and 30px tall
         i = 2
@@ -179,9 +180,21 @@ class Goblin(pg.sprite.Sprite):
         y_pos = PLATFORM_LIST[i][1] - 30
         x_pos = random.randrange(PLATFORM_LIST[i][0], PLATFORM_LIST[i][0] + PLATFORM_LIST[i][2]-20)
 
+        self.x_lower_bound = PLATFORM_LIST[i][0]
+        self.x_upper_bound = PLATFORM_LIST[i][0] + PLATFORM_LIST[i][2]-20
+
         self.spawn_platform = PLATFORM_LIST[i]
         self.rect.y = y_pos
         self.rect.x = x_pos
+
+    def update(self):
+        if self.rect.x > self.x_upper_bound:
+            self.vx = -self.vx
+        if self.rect.x < self.x_lower_bound:
+            self.vx = -self.vx
+        self.rect.x += self.vx
+
+
 
 
 

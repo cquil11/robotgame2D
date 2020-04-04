@@ -28,10 +28,14 @@ class Game:
 
         for i in range(0, 3):
             goblin = Goblin()
-            goblins.append(goblin)
             self.all_sprites.add(goblin)
             self.goblins.add(goblin)
-            print(str(goblins))
+            goblins_arr.append(goblin)
+        print(str(goblins_arr))
+        print(goblins_arr[0].rect.x)
+        print(goblins_arr[0].spawn_platform)
+        print(goblins_arr[1].rect.x)
+        print(goblins_arr[2].rect.x)
 
         self.coins = pg.sprite.Group()
         self.player = Player(self)
