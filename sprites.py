@@ -27,6 +27,9 @@ class Player(pg.sprite.Sprite):
         if hits:
             self.vel.y = PLAYER_JUMP
 
+    def hit(self):
+        pass
+
     def update(self):
         self.acc = vec(0, PLAYER_GRAV)
         keys = pg.key.get_pressed()

@@ -96,7 +96,6 @@ class Game:
                 self.playing = False
             elif hits_bullet:
                 # self.player.kill()
-                self.player.pos.y = hits_bullet[0].rect.top
                 self.player.vel.y = 0
                 for sprite in self.all_sprites:
                     sprite.rect.y -= int(max(self.player.vel.y, 10))
@@ -105,14 +104,12 @@ class Game:
                 self.playing = False
             elif hits_goblin:
                 # self.player.kill()
-                self.player.pos.y = hits_goblin[0].rect.top
                 #for sprite in self.all_sprites:
                  #   sprite.rect.y -= int(max(self.player.vel.y, 10))
                 # if self.player.lives == 0:
                 self.player.hearts -= 0.5
             if self.player.hearts <= 0:
                 play_song('sounds/death_song.mp3')
-                self.player.vel.y = 0
                 self.playing = False
 
     def events(self):
