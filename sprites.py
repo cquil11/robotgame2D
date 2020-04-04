@@ -178,6 +178,8 @@ class Goblin(pg.sprite.Sprite):
 
         y_pos = PLATFORM_LIST[i][1] - 30
         x_pos = random.randrange(PLATFORM_LIST[i][0], PLATFORM_LIST[i][0] + PLATFORM_LIST[i][2])
+
+        self.spawn_platform = PLATFORM_LIST[i]
         self.rect.y = y_pos
         self.rect.x = x_pos
 

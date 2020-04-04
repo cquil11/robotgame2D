@@ -32,6 +32,7 @@ death_sound = pg.mixer.Sound('sounds/fuck.wav')
 songs = ['sounds/uzi_music.mp3', 'sounds/death_song.mp3', 'sounds/computer_startup.mp3', 'sounds/game_music.mp3']
 current_song = None
 SCORE = 0
+goblins = []
 
 
 
