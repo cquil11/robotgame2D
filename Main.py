@@ -33,8 +33,8 @@ class Game:
         self.goblins = pg.sprite.Group()
         self.monster = pg.sprite.Group()
         self.coins = pg.sprite.Group()
-        #NOTE: One less goblin spawns than you specify due to the way the goblins_arr works
-        for i in range(0, 4):
+        #NOTE: Number of spawned goblins CANNOT exceed len(platform_arr) * 2
+        for i in range(0, 8):
             goblin = Goblin()
             self.all_sprites.add(goblin)
             self.goblins.add(goblin)
@@ -54,7 +54,7 @@ class Game:
         self.monsterbullet = pg.sprite.Group()
         self.all_sprites.add(bullet)
         self.monsterbullet.add(bullet)
-        for plat in PLATFORM_LIST:
+        for plat in platform_arr:
             p = Platform(self, *plat)
             self.all_sprites.add(p)
             self.platforms.add(p)
@@ -193,6 +193,7 @@ class Game:
         player_arr.clear()
         monster_arr.clear()
         skel_arr.clear()
+        reset_plat_list()
         if not self.running:
             return
         self.screen.blit(level_background, (0, 0))
