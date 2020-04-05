@@ -25,32 +25,30 @@ class Game:
         self.score = 0
         self.coin_count = 0
         self.all_sprites = pg.sprite.Group()
+        self.player = Player(self)
+        player_arr.append(self.player)
+        self.all_sprites.add(self.player)
         self.platforms = pg.sprite.Group()
         self.lava = pg.sprite.Group()
         self.goblins = pg.sprite.Group()
         self.coins = pg.sprite.Group()
-        for i in range(0, 3):
+        #NOTE: One less goblin spawns than you specify due to the way the goblins_arr works
+        for i in range(0, 4):
             goblin = Goblin()
             self.all_sprites.add(goblin)
             self.goblins.add(goblin)
             goblins_arr.append(goblin)
-        print(str(goblins_arr))
-        print(goblins_arr[0].rect.x)
-        print(goblins_arr[0].spawn_platform)
-        print(goblins_arr[1].rect.x)
-        print(goblins_arr[2].rect.x)
+
         for i in range(0, 4):
             self.coin_count += 1
             coin = Coin(self)
             self.all_sprites.add(coin)
             self.coins.add(coin)
             coin_arr.append(coin)
-        self.player = Player(self)
         self.monster = pg.sprite.Group()
         bullet = MonsterBullet(62, 95)
         self.monsterbullet = pg.sprite.Group()
         self.monsterbullet.add(bullet)
-        self.all_sprites.add(self.player)
         self.all_sprites.add(self.monster)
         # self.monster.add()
         self.all_sprites.add(self.monsterbullet)
@@ -74,11 +72,11 @@ class Game:
             self.draw()
 
     def update(self):
+        print(self.coin_count)
         self.game_clock = pg.time.Clock()
         # game loop update
         self.all_sprites.update()
         # check if player hits platform
-        print(self.coin_count)
         if self.coin_count == 0:
             self.playing = False
         if self.player.vel.y > 0:
@@ -120,6 +118,7 @@ class Game:
                     play_song('sounds/death_song.mp3')
                     pg.time.wait(500)
                     self.playing = False
+
 
     def events(self):
         # game loop events

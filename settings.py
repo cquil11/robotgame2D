@@ -46,6 +46,9 @@ current_song = None
 goblins_arr = []
 coin_arr = []
 
+player_arr = []
+
+
 
 
 """def draw_lives(surf, x, y, lives, img):

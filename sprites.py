@@ -174,11 +174,12 @@ class Coin(pg.sprite.Sprite):
                 self.game.coin_count -= 1
                 self.kill()"""
         for coi in coin_arr:
-            if coi.rect.x == self.game.player.get_pos_x() and coi.rect.y - 25 == self.game.player.get_pos_y():
+            if abs(coi.rect.x - player_arr[0].rect.x) < 10 and abs(coi.rect.y - player_arr[0].rect.y) < 20:
                 self.game.score += 100
                 coin_sound.play()
                 self.game.coin_count -= 1
                 coi.kill()
+                coin_arr.remove(coi)
 
 
 class MonsterBullet(pg.sprite.Sprite):
@@ -215,8 +216,9 @@ class Goblin(pg.sprite.Sprite):
         while i == 2:
             i = random.randrange(5)
 
+
         y_pos = PLATFORM_LIST[i][1] - 30
-        x_pos = random.randrange(PLATFORM_LIST[i][0], PLATFORM_LIST[i][0] + PLATFORM_LIST[i][2]-20)
+        x_pos = random.randrange(PLATFORM_LIST[i][0], PLATFORM_LIST[i][0] + PLATFORM_LIST[i][2] - 20)
 
         self.x_lower_bound = PLATFORM_LIST[i][0]
         self.x_upper_bound = PLATFORM_LIST[i][0] + PLATFORM_LIST[i][2]-20
@@ -229,7 +231,7 @@ class Goblin(pg.sprite.Sprite):
         for gob in goblins_arr:
             for i in range(0, len(goblins_arr)):
                 diff_sign = False
-                if gob is not goblins_arr[i].vx and gob.vx < 0 and goblins_arr[i].vx > 0 or gob.vx > 0 and goblins_arr[i].vx < 0:
+                if gob is not goblins_arr[i] and gob.vx < 0 and goblins_arr[i].vx > 0 or gob.vx > 0 and goblins_arr[i].vx < 0:
                     diff_sign = True
                 if gob is not goblins_arr[i] and abs(gob.rect.x - goblins_arr[i].rect.x) < 20 \
                         and abs(gob.rect.y - goblins_arr[i].rect.y) < 20:
