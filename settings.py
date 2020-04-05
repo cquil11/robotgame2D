@@ -46,6 +46,7 @@ lava_burning_sound = pg.mixer.Sound('sounds/burning_sound.wav')
 sword_swing = pg.mixer.Sound('sounds/sword_sound.wav')
 scream_sound = pg.mixer.Sound('sounds/death_scream.wav')
 coin_sound = pg.mixer.Sound('sounds/coin_pickup.wav')
+hamel_sound = pg.mixer.Sound('sounds/hamel_intro.wav')
 
 # MUSIC
 songs = ['sounds/uzi_music.mp3', 'sounds/death_song.mp3', 'sounds/computer_startup.mp3', 'sounds/game_music.mp3']

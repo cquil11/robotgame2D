@@ -204,12 +204,13 @@ class MonsterBullet(pg.sprite.Sprite):
         self.image = lava_ball
         self.rect = self.image.get_rect()
         self.pos = vec(WIDTH / 2, HEIGHT / 2)
-        y_pos = monster_arr[len(monster_arr)-1].rect.y + 95
-        x_pos = monster_arr[len(monster_arr)-1].rect.x + 62
+        y_pos = 125
+        x_pos = monster_arr[0].rect.x
         self.rect.y = y_pos
         self.rect.x = x_pos
         self.speedx = random.randrange(-10, 10)
         self.speedy = random.randrange(5, 15)
+        hamel_sound.play()
 
     def update(self):
         self.rect.y += self.speedy
