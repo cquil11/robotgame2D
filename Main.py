@@ -31,6 +31,7 @@ class Game:
         self.platforms = pg.sprite.Group()
         self.lava = pg.sprite.Group()
         self.goblins = pg.sprite.Group()
+        self.monster = pg.sprite.Group()
         self.coins = pg.sprite.Group()
         #NOTE: One less goblin spawns than you specify due to the way the goblins_arr works
         for i in range(0, 4):
@@ -45,19 +46,19 @@ class Game:
             self.all_sprites.add(coin)
             self.coins.add(coin)
             coin_arr.append(coin)
-        self.monster = pg.sprite.Group()
-        bullet = MonsterBullet(62, 95)
+        bullet = MonsterBullet()
+        mon = Monster(WIDTH / 2, 30)
         self.monsterbullet = pg.sprite.Group()
+        self.all_sprites.add(bullet)
         self.monsterbullet.add(bullet)
-        self.all_sprites.add(self.monster)
-        # self.monster.add()
-        self.all_sprites.add(self.monsterbullet)
+        self.monster.add(mon)
+        self.all_sprites.add(mon)
+        monster_arr.append(mon)
         for plat in PLATFORM_LIST:
             p = Platform(self, *plat)
             self.all_sprites.add(p)
             self.platforms.add(p)
         bottom_lava = Lava(0, HEIGHT - 40, 800, 20)
-        self.monsterbullet.add(bullet)
         self.all_sprites.add(bottom_lava)
         self.lava.add(bottom_lava)
         self.run()
@@ -72,7 +73,8 @@ class Game:
             self.draw()
 
     def update(self):
-        print(self.coin_count)
+        # print(self.coin_count)
+        print(monster_arr)
         self.game_clock = pg.time.Clock()
         # game loop update
         self.all_sprites.update()
@@ -171,6 +173,10 @@ class Game:
     def show_go_screen(self):
         # game over screen
         goblins_arr.clear()
+        coin_arr.clear()
+        player_arr.clear()
+        monster_arr.clear()
+        skel_arr.clear()
         game_over_sound.play()
         if not self.running:
             return
@@ -183,6 +189,10 @@ class Game:
     def show_lc_screen(self):
         # level complete screen
         goblins_arr.clear()
+        coin_arr.clear()
+        player_arr.clear()
+        monster_arr.clear()
+        skel_arr.clear()
         if not self.running:
             return
         self.screen.blit(level_background, (0, 0))

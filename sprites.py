@@ -11,6 +11,7 @@ class Player(pg.sprite.Sprite):
     def __init__(self, game):
         pg.sprite.Sprite.__init__(self)
         self.game = game
+        self._layer = player_layer
         self.image = pleft
         self.rect = self.image.get_rect()
         self.pos = vec(WIDTH /2, HEIGHT / 2)
@@ -30,6 +31,7 @@ class Player(pg.sprite.Sprite):
             self.image = pright
 
     def hit(self):
+        sword_swing.play()
         if self.image == pright:
             self.image = prighth
         if self.image == pleft:
@@ -76,6 +78,7 @@ class Platform(pg.sprite.Sprite):
     def __init__(self, game, x, y, w, h):
         pg.sprite.Sprite.__init__(self)
         self.game = game
+        self._layer = platform_layer
         self.image = pg.Surface((w, h))
         self.rect = self.image.get_rect()
         if w == 320:
@@ -92,9 +95,19 @@ class Monster(pg.sprite.Sprite):
     def __init__(self, x, y):
         pg.sprite.Sprite.__init__(self)
         self.image = hamel_monster
+        self._layer = monster_layer
         self.rect = self.image.get_rect()
         self.rect.x = x
         self.rect.y = y
+        self.vx = 5
+
+    def update(self):
+        self.rect.x += self.vx
+        if self.rect.x >= WIDTH - 128:
+            self.vx = -self.vx
+        if self.rect.x == 0:
+            self.vx = -self.vx
+
 
 
 """class Monster(pg.sprite.Sprite):
@@ -118,21 +131,22 @@ class Monster(pg.sprite.Sprite):
         self.rect.x += dx * self.speed
         self.rect.y += dy * self.speed
 
-    # def update(self):
-        # self.acc = vec(0, 0)
-        # if self.pos.x > WIDTH:
-            # self.speedx = -10
-        # if self.pos.x < 0:
-            # self.speedx = 10
+    def update(self):
+        self.acc = vec(0, 0)
+        if self.pos.x > WIDTH:
+            self.speedx = -10
+        if self.pos.x < 0:
+            self.speedx = 10
 
-    # def shoot(self, game):
-        # self.game = game
-        # self.image = hamel_open"""
+    def shoot(self, game):
+        self.game = game
+        self.image = hamel_open"""
 
 
 class Lava(pg.sprite.Sprite):
     def __init__(self, x, y, w, h):
         pg.sprite.Sprite.__init__(self)
+        self._layer = lava_layer
         self.image = pg.Surface((w, h))
         self.rect = self.image.get_rect()
         self.image = lava
@@ -145,6 +159,7 @@ class Coin(pg.sprite.Sprite):
     def __init__(self, game):
         pg.sprite.Sprite.__init__(self)
         self.game = game
+        self._layer = coin_layer
         self.image = coin
         self.rect = self.image.get_rect()
         self.x_upper_bound = 0
@@ -183,13 +198,16 @@ class Coin(pg.sprite.Sprite):
 
 
 class MonsterBullet(pg.sprite.Sprite):
-    def __init__(self, x, y):
+    def __init__(self):
         pg.sprite.Sprite.__init__(self)
+        self._layer = projectile_layer
         self.image = lava_ball
         self.rect = self.image.get_rect()
         self.pos = vec(WIDTH / 2, HEIGHT / 2)
-        self.rect.y = y
-        self.rect.x = x
+        y_pos = monster_arr[len(monster_arr)-1].rect.y + 95
+        x_pos = monster_arr[len(monster_arr)-1].rect.x + 62
+        self.rect.y = y_pos
+        self.rect.x = x_pos
         self.speedx = random.randrange(-10, 10)
         self.speedy = random.randrange(5, 15)
 
@@ -205,17 +223,17 @@ class MonsterBullet(pg.sprite.Sprite):
 class Goblin(pg.sprite.Sprite):
     def __init__(self):
         pg.sprite.Sprite.__init__(self)
+        self._layer = mob_layer
         self.image_left = gleft
         self.image_right = gright
         self.image = gleft
         self.rect = self.image.get_rect()
-        self.vx = 4
+        self.vx = MOB_SPEED
         self.x_upper_bound = 0
         # Goblin is 20px wide and 30px tall
         i = 2
         while i == 2:
             i = random.randrange(5)
-
 
         y_pos = PLATFORM_LIST[i][1] - 30
         x_pos = random.randrange(PLATFORM_LIST[i][0], PLATFORM_LIST[i][0] + PLATFORM_LIST[i][2] - 20)
@@ -248,7 +266,28 @@ class Goblin(pg.sprite.Sprite):
             self.image = gright
 
 
+class Skeleton(pg.sprite.Sprite):
+    def __init__(self):
+        pg.sprite.Sprite.__init__(self)
+        self._layer = mob_layer
+        self.image = sleft
+        self.rect = self.image.get_rect()
+        self.vx = 4
+        self.x_upper_bound = 0
+        # Skeleton is 20px wide and 30px tall
+        i = 2
+        while i == 2:
+            i = random.randrange(5)
 
+        y_pos = PLATFORM_LIST[i][1] - 30
+        x_pos = random.randrange(PLATFORM_LIST[i][0], PLATFORM_LIST[i][0] + PLATFORM_LIST[i][2]-20)
+
+        self.x_lower_bound = PLATFORM_LIST[i][0]
+        self.x_upper_bound = PLATFORM_LIST[i][0] + PLATFORM_LIST[i][2]-20
+
+        self.spawn_platform = PLATFORM_LIST[i]
+        self.rect.y = y_pos
+        self.rect.x = x_pos
 
 
 
