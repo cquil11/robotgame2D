@@ -75,12 +75,13 @@ class Player(pg.sprite.Sprite):
 
 
 class Platform(pg.sprite.Sprite):
-    def __init__(self, game, x, y, w, h):
+    def __init__(self, game, x, y, w, h, num_goblins):
         pg.sprite.Sprite.__init__(self)
         self.game = game
         self._layer = platform_layer
         self.image = pg.Surface((w, h))
         self.rect = self.image.get_rect()
+        self.num_goblins = num_goblins
         if w == 320:
             self.image = platform_320
         if w == 100:
@@ -135,8 +136,8 @@ class Coin(pg.sprite.Sprite):
         while j == 2:
             j = random.randrange(5)
 
-        y_pos = PLATFORM_LIST[j][1] - 15
-        x_pos = random.randrange(PLATFORM_LIST[j][0], PLATFORM_LIST[j][0] + PLATFORM_LIST[j][2] - 10)
+        y_pos = platform_arr[j][1] - 15
+        x_pos = random.randrange(platform_arr[j][0], platform_arr[j][0] + platform_arr[j][2] - 10)
         self.rect.y = y_pos
         self.rect.x = x_pos
 
@@ -203,13 +204,24 @@ class Goblin(pg.sprite.Sprite):
         while i == 2:
             i = random.randrange(5)
 
-        y_pos = PLATFORM_LIST[i][1] - 30
-        x_pos = random.randrange(PLATFORM_LIST[i][0], PLATFORM_LIST[i][0] + PLATFORM_LIST[i][2] - 20)
 
-        self.x_lower_bound = PLATFORM_LIST[i][0]
-        self.x_upper_bound = PLATFORM_LIST[i][0] + PLATFORM_LIST[i][2]-20
+        while platform_arr[i][4] == 0:
+            i = random.randrange(5)
+            while i == 2:
+                i = random.randrange(5)
 
-        self.spawn_platform = PLATFORM_LIST[i]
+
+        y_pos = platform_arr[i][1] - 30
+        x_pos = random.randrange(platform_arr[i][0], platform_arr[i][0] + platform_arr[i][2] - 20)
+        platform_arr[i][4] = platform_arr[i][4] - 1
+
+
+
+
+        self.x_lower_bound = platform_arr[i][0]
+        self.x_upper_bound = platform_arr[i][0] + platform_arr[i][2] - 20
+
+        self.spawn_platform = platform_arr[i]
         self.rect.y = y_pos
         self.rect.x = x_pos
 
@@ -247,13 +259,13 @@ class Skeleton(pg.sprite.Sprite):
         while i == 2:
             i = random.randrange(5)
 
-        y_pos = PLATFORM_LIST[i][1] - 30
-        x_pos = random.randrange(PLATFORM_LIST[i][0], PLATFORM_LIST[i][0] + PLATFORM_LIST[i][2]-20)
+        y_pos = platform_arr[i][1] - 30
+        x_pos = random.randrange(platform_arr[i][0], platform_arr[i][0] + platform_arr[i][2] - 20)
 
-        self.x_lower_bound = PLATFORM_LIST[i][0]
-        self.x_upper_bound = PLATFORM_LIST[i][0] + PLATFORM_LIST[i][2]-20
+        self.x_lower_bound = platform_arr[i][0]
+        self.x_upper_bound = platform_arr[i][0] + platform_arr[i][2] - 20
 
-        self.spawn_platform = PLATFORM_LIST[i]
+        self.spawn_platform = platform_arr[i]
         self.rect.y = y_pos
         self.rect.x = x_pos
 

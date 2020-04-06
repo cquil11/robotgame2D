@@ -57,6 +57,7 @@ coin_arr = []
 skel_arr = []
 player_arr = []
 monster_arr = []
+platform_arr = []
 
 
 # Layers
@@ -106,11 +107,19 @@ BOSS_DECEL = -0.10
 MOB_SPEED = random.randrange(2, 4)
 
 # default platforms
-PLATFORM_LIST = [(0, HEIGHT - 80, WIDTH / 2 - 80, 20),
-                 (WIDTH / 2 + 80, HEIGHT - 80, WIDTH / 2 - 80, 20),
-                 (WIDTH / 2 - 50, (HEIGHT * 3 / 4) - 60, 100, 20),
-                 (50, (HEIGHT * 5 / 8) - 60, 150, 20),
-                 (WIDTH-200, (HEIGHT * 5 / 8) - 60, 150, 20)]
+platform_arr = [[0, HEIGHT - 80, WIDTH / 2 - 80, 20, 2],
+                [WIDTH / 2 + 80, HEIGHT - 80, WIDTH / 2 - 80, 20, 2],
+                [WIDTH / 2 - 50, (HEIGHT * 3 / 4) - 60, 100, 20, 2],
+                [50, (HEIGHT * 5 / 8) - 60, 150, 20, 2],
+                [WIDTH-200, (HEIGHT * 5 / 8) - 60, 150, 20, 2]]
+
+def reset_plat_list():
+    global platform_arr
+    platform_arr = [[0, HEIGHT - 80, WIDTH / 2 - 80, 20, 2],
+                     [WIDTH / 2 + 80, HEIGHT - 80, WIDTH / 2 - 80, 20, 2],
+                     [WIDTH / 2 - 50, (HEIGHT * 3 / 4) - 60, 100, 20, 2],
+                     [50, (HEIGHT * 5 / 8) - 60, 150, 20, 2],
+                     [WIDTH - 200, (HEIGHT * 5 / 8) - 60, 150, 20, 2]]
 
 # define colors
 WHITE = (255, 255, 255)
