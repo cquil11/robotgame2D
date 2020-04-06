@@ -21,7 +21,7 @@ class Game:
         self.font_name = pg.font.match_font(FONT_NAME)
 
     def new(self):
-        # start new game
+        # start new gamev
         self.score = 0
         self.coin_count = 0
         self.all_sprites = pg.sprite.Group()
