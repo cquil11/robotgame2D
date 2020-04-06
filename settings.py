@@ -121,6 +121,7 @@ def reset_plat_list():
                      [50, (HEIGHT * 5 / 8) - 60, 150, 20, 2],
                      [WIDTH - 200, (HEIGHT * 5 / 8) - 60, 150, 20, 2]]
 
+
 # define colors
 WHITE = (255, 255, 255)
 BLACK = (0, 0, 0)

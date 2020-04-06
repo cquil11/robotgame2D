@@ -21,7 +21,7 @@ class Game:
         self.font_name = pg.font.match_font(FONT_NAME)
 
     def new(self):
-        # start new gamev
+        # start new game
         self.score = 0
         self.coin_count = 0
         self.all_sprites = pg.sprite.Group()
@@ -35,7 +35,7 @@ class Game:
         self.coins = pg.sprite.Group()
         #NOTE: Number of spawned goblins CANNOT exceed len(platform_arr) * 2
         for i in range(0, 8):
-            goblin = Goblin()
+            goblin = Goblin(self)
             self.all_sprites.add(goblin)
             self.goblins.add(goblin)
             goblins_arr.append(goblin)
@@ -46,7 +46,7 @@ class Game:
             self.all_sprites.add(coin)
             self.coins.add(coin)
             coin_arr.append(coin)
-        mon = Monster(WIDTH / 2, 30)
+        mon = Monster(self, WIDTH / 2, 30)
         self.monster.add(mon)
         self.all_sprites.add(mon)
         monster_arr.append(mon)
@@ -73,7 +73,6 @@ class Game:
             self.draw()
 
     def update(self):
-        # print(self.coin_count)
         print(monster_arr)
         self.game_clock = pg.time.Clock()
         # game loop update
@@ -98,10 +97,8 @@ class Game:
                 self.player.vel.y = 0
                 pg.mixer.music.stop()
                 self.player.hearts -= 10
-                if self.player.hearts <= 0:
+                if self.player.hearts < 0:
                     lava_burning_sound.play()
-                    scream_sound.play()
-                    pg.time.wait(10500)
                     play_song('sounds/death_song.mp3')
                     self.playing = False
             elif hits_bullet:
@@ -111,8 +108,7 @@ class Game:
                     play_song('sounds/death_song.mp3')
                     pg.time.wait(500)
                     self.playing = False
-
-            if hits_goblin:
+            elif hits_goblin:
                 # if self.player.lives == 0:
                 self.player.hearts -= 4
                 death_sound_HIT.play()
@@ -132,13 +128,12 @@ class Game:
                     self.playing = False
                 self.running = False
             if event.type == pg.KEYDOWN:
+                if event.key == K_UP:
+                    self.player.jump()
+                if event.key == K_w:
+                    self.player.jump()
                 if event.key == pg.K_SPACE:
-                    sword_swing.play()
                     self.player.hit()
-                if event.key == pg.K_UP:
-                    self.player.jump()
-                if event.key == pg.K_w:
-                    self.player.jump()
 
     def draw(self):
         # game loop draw poop
@@ -178,6 +173,7 @@ class Game:
         monster_arr.clear()
         skel_arr.clear()
         game_over_sound.play()
+        reset_plat_list()
         if not self.running:
             return
         self.screen.blit(end_background, (0, 0))
@@ -210,8 +206,7 @@ class Game:
                     waiting = False
                     self.running = False
                 if event.type == pg.KEYUP:
-                    print(current_song)
-                    if event.key == pg.K_RETURN and current_song != 'sounds/uzi_music.mp3':
+                    if event.key == pg.K_RETURN:
                         play_song('sounds/uzi_music.mp3')
                         waiting = False
                     if event.key == pg.K_ESCAPE:
@@ -236,8 +231,7 @@ while g.running:
         g.show_lc_screen()
     g.show_go_screen()
 
-pg.QUIT
-
+pg.quit()
 
 
 

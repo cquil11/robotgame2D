@@ -178,7 +178,6 @@ class MonsterBullet(pg.sprite.Sprite):
         self.rect.x = x_pos
         self.speedx = random.randrange(-10, 10)
         self.speedy = random.randrange(5, 15)
-        hamel_sound.play()
 
     def update(self):
         self.rect.y += self.speedy
@@ -190,8 +189,9 @@ class MonsterBullet(pg.sprite.Sprite):
 
 
 class Goblin(pg.sprite.Sprite):
-    def __init__(self):
+    def __init__(self, game):
         pg.sprite.Sprite.__init__(self)
+        self.game = game
         self._layer = mob_layer
         self.image_left = gleft
         self.image_right = gright
@@ -215,9 +215,6 @@ class Goblin(pg.sprite.Sprite):
         x_pos = random.randrange(platform_arr[i][0], platform_arr[i][0] + platform_arr[i][2] - 20)
         platform_arr[i][4] = platform_arr[i][4] - 1
 
-
-
-
         self.x_lower_bound = platform_arr[i][0]
         self.x_upper_bound = platform_arr[i][0] + platform_arr[i][2] - 20
 
@@ -228,9 +225,9 @@ class Goblin(pg.sprite.Sprite):
     def update(self):
         for gob in goblins_arr:
             for i in range(0, len(goblins_arr)):
-                diff_sign = False
+                """diff_sign = False
                 if gob is not goblins_arr[i] and gob.vx < 0 and goblins_arr[i].vx > 0 or gob.vx > 0 and goblins_arr[i].vx < 0:
-                    diff_sign = True
+                    diff_sign = True"""
                 if gob is not goblins_arr[i] and abs(gob.rect.x - goblins_arr[i].rect.x) < 20 \
                         and abs(gob.rect.y - goblins_arr[i].rect.y) < 20:
                     self.vx = -self.vx
@@ -246,7 +243,7 @@ class Goblin(pg.sprite.Sprite):
             self.image = gright
 
 
-class Skeleton(pg.sprite.Sprite):
+"""class Skeleton(pg.sprite.Sprite):
     def __init__(self):
         pg.sprite.Sprite.__init__(self)
         self._layer = mob_layer
@@ -287,7 +284,7 @@ class Skeleton(pg.sprite.Sprite):
         if self.vx < 0:
             self.image = sleft
         if self.vx > 0:
-            self.image = sright
+            self.image = sright"""
 
 
 
