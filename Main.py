@@ -23,6 +23,7 @@ class Game:
     def new(self):
         # start new game
         self.score = 0
+        self.shoot = 0
         self.coin_count = 0
         self.all_sprites = pg.sprite.Group()
         self.player = Player(self)
@@ -31,22 +32,28 @@ class Game:
         self.platforms = pg.sprite.Group()
         self.lava = pg.sprite.Group()
         self.goblins = pg.sprite.Group()
+        "self.skel = pg.sprite.Group"
         self.monster = pg.sprite.Group()
         self.coins = pg.sprite.Group()
-        #NOTE: One less goblin spawns than you specify due to the way the goblins_arr works
+        # NOTE: One less goblin spawns than you specify due to the way the goblins_arr works
         for i in range(0, 4):
             goblin = Goblin()
             self.all_sprites.add(goblin)
             self.goblins.add(goblin)
             goblins_arr.append(goblin)
-
+        """# NOTE: One less skeleton spawns than you specify due to the way the skel_arr works
+        for i in range(0, 4):
+            skeleton = Skeleton()
+            self.all_sprites.add(skeleton)
+            self.skel.add(skeleton)
+            skel_arr.append(skeleton)"""
         for i in range(0, 4):
             self.coin_count += 1
             coin = Coin(self)
             self.all_sprites.add(coin)
             self.coins.add(coin)
             coin_arr.append(coin)
-        mon = Monster(WIDTH / 2, 30)
+        mon = Monster(self, WIDTH / 2, 30)
         self.monster.add(mon)
         self.all_sprites.add(mon)
         monster_arr.append(mon)
@@ -73,9 +80,9 @@ class Game:
             self.draw()
 
     def update(self):
-        # print(self.coin_count)
         print(monster_arr)
         self.game_clock = pg.time.Clock()
+        self.shoot += 1
         # game loop update
         self.all_sprites.update()
         # check if player hits platform
@@ -111,7 +118,8 @@ class Game:
                     play_song('sounds/death_song.mp3')
                     pg.time.wait(500)
                     self.playing = False
-            elif hits_goblin:
+
+            if hits_goblin:
                 # if self.player.lives == 0:
                 self.player.hearts -= 4
                 death_sound_HIT.play()
@@ -120,7 +128,6 @@ class Game:
                     play_song('sounds/death_song.mp3')
                     pg.time.wait(500)
                     self.playing = False
-
 
     def events(self):
         # game loop events
@@ -132,13 +139,12 @@ class Game:
                     self.playing = False
                 self.running = False
             if event.type == pg.KEYDOWN:
+                if event.key == K_UP:
+                    self.player.jump()
+                if event.key == K_w:
+                    self.player.jump()
                 if event.key == pg.K_SPACE:
-                    sword_swing.play()
                     self.player.hit()
-                if event.key == pg.K_UP:
-                    self.player.jump()
-                if event.key == pg.K_w:
-                    self.player.jump()
 
     def draw(self):
         # game loop draw poop
@@ -154,9 +160,11 @@ class Game:
 
     def show_start_screen(self):
         # game start screen
-        start_screen_timer = pg.time.get_ticks()
+        start_screen_timer = pg.time.Clock()
+        self.screen_back = 0
         self.playing = True
-        self.screen.blit(start_background2, (0, 0))
+
+        self.screen.blit(start_background0, (0, 0))
         """for bg in backgrounds:
             self.screen.blit(bg, (0, 0))
             pg.time.wait(1000)

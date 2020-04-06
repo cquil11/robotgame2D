@@ -92,8 +92,9 @@ class Platform(pg.sprite.Sprite):
 
 
 class Monster(pg.sprite.Sprite):
-    def __init__(self, x, y):
+    def __init__(self, game, x, y):
         pg.sprite.Sprite.__init__(self)
+        self.game = game
         self.image = hamel_monster
         self._layer = monster_layer
         self.rect = self.image.get_rect()
@@ -107,40 +108,6 @@ class Monster(pg.sprite.Sprite):
             self.vx = -self.vx
         if self.rect.x == 0:
             self.vx = -self.vx
-
-
-
-"""class Monster(pg.sprite.Sprite):
-    def __init__(self, game):
-        pg.sprite.Sprite.__init__(self)
-        self.game = game
-        self.image = hamel_monster
-        self.rect = self.image.get_rect()
-        self.pos = vec(WIDTH / 2, HEIGHT / 2)
-        self.vel = vec(0, 0)
-        self.acc = vec(0, 0)
-        self.speedx = 10
-
-    def move_towards_player(self, player):
-        # Find direction vector (dx, dy) between enemy and player.
-        dx, dy = player.rect.x - self.rect.x, player.rect.y - self.rect.y
-        dist = math.hypot(dx, dy)
-        dx, dy = dx / dist, dy / dist 
-        # Normalize.
-        # Move along this normalized vector towards the player at current speed.
-        self.rect.x += dx * self.speed
-        self.rect.y += dy * self.speed
-
-    def update(self):
-        self.acc = vec(0, 0)
-        if self.pos.x > WIDTH:
-            self.speedx = -10
-        if self.pos.x < 0:
-            self.speedx = 10
-
-    def shoot(self, game):
-        self.game = game
-        self.image = hamel_open"""
 
 
 class Lava(pg.sprite.Sprite):
@@ -229,7 +196,7 @@ class Goblin(pg.sprite.Sprite):
         self.image_right = gright
         self.image = gleft
         self.rect = self.image.get_rect()
-        self.vx = MOB_SPEED
+        self.vx = 4
         self.x_upper_bound = 0
         # Goblin is 20px wide and 30px tall
         i = 2
@@ -290,7 +257,25 @@ class Skeleton(pg.sprite.Sprite):
         self.rect.y = y_pos
         self.rect.x = x_pos
 
-
+    def update(self):
+        for skele in skel_arr:
+            for i in range(0, len(skel_arr)):
+                diff_sign = False
+                if skele is not skel_arr[i] and skele.vx < 0 and goblins_arr[i].vx > 0 or skele.vx > 0 and skel_arr[i].vx < 0:
+                    diff_sign = True
+                if skele is not skel_arr[i] and abs(skele.rect.x - skel_arr[i].rect.x) < 20 \
+                        and abs(skele.rect.y - skel_arr[i].rect.y) < 20:
+                    self.vx = -self.vx
+                    skel_arr[i].vx = -skel_arr[i].vx
+        if self.rect.x > self.x_upper_bound:
+            self.vx = -self.vx
+        if self.rect.x < self.x_lower_bound:
+            self.vx = -self.vx
+        self.rect.x += self.vx
+        if self.vx < 0:
+            self.image = sleft
+        if self.vx > 0:
+            self.image = sright
 
 
 
