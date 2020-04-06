@@ -98,7 +98,7 @@ class Game:
                 self.player.vel.y = 0
                 pg.mixer.music.stop()
                 self.player.hearts -= 10
-                if self.player.hearts < 0:
+                if self.player.hearts <= 0:
                     lava_burning_sound.play()
                     scream_sound.play()
                     pg.time.wait(10500)
