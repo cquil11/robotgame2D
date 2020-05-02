@@ -1,9 +1,12 @@
+# File I/O
+
+
 import pygame as pg
 from pygame.locals import *
 import random
 from settings import *
 from sprites import *
-import os
+from os import path
 import time
 
 
@@ -19,6 +22,12 @@ class Game:
         play_song('sounds/computer_startup.mp3')
         self.running = True
         self.font_name = pg.font.match_font(FONT_NAME)
+        self.dir = path.dirname(__file__)
+        with open(path.join(self.dir, hs_file), 'w') as f:
+            try:
+                self.highscore = int(f.read())
+            except:
+                self.highscore = 0
 
     def new(self):
         # start new game
@@ -73,50 +82,65 @@ class Game:
             self.draw()
 
     def update(self):
+        self.score += 1
+        if self.score <= 1000:
+            if self.score % 150 == 0:
+                self.all_sprites.add(MonsterBullet())
+                self.monsterbullet.add(MonsterBullet())
+        elif self.score <= 1500:
+            if self.score % 100 == 0:
+                self.all_sprites.add(MonsterBullet())
+                self.monsterbullet.add(MonsterBullet())
+        elif self.score <= 2000:
+            if self.score % 100 == 0:
+                self.all_sprites.add(MonsterBullet())
+                self.monsterbullet.add(MonsterBullet())
+        else:
+            if self.score % 25 == 0:
+                self.all_sprites.add(MonsterBullet())
+                self.monsterbullet.add(MonsterBullet())
         print(monster_arr)
         self.game_clock = pg.time.Clock()
         # game loop update
         self.all_sprites.update()
+        hits_lava = pg.sprite.spritecollide(self.player, self.lava, False)
+        hits_bullet = pg.sprite.spritecollide(self.player, self.monsterbullet, False)
+        hits_goblin = pg.sprite.spritecollide(self.player, self.goblins, False)
+        """hits_coin = pg.sprite.spritecollide(self.player, self.coins, False)
+        hits_sword = pg.sprite.spritecollide(self.player, self.goblins, False)
+        hits_monster = pg.sprite.spritecollide(self.player, self.monster, False)"""
+        # DEATH
+        if hits_lava:
+            self.player.pos.y = hits_lava[0].rect.bottom
+            self.player.vel.y = 0
+            pg.mixer.music.stop()
+            self.player.hearts -= 10
+            if self.player.hearts < 0:
+                lava_burning_sound.play()
+                play_song('sounds/death_song.mp3')
+                self.playing = False
+        elif hits_bullet:
+            self.player.hearts -= 5
+            if self.player.hearts < 0:
+                pg.mixer.music.stop()
+                play_song('sounds/death_song.mp3')
+                pg.time.wait(500)
+                self.playing = False
+        elif hits_goblin:
+            # if self.player.lives == 0:
+            self.player.hearts -= 4
+            death_sound_HIT.play()
+            if self.player.hearts < 0:
+                pg.mixer.music.stop()
+                play_song('sounds/death_song.mp3')
+                pg.time.wait(500)
+                self.playing = False
         # check if player hits platform
-        if self.coin_count == 0:
-            self.playing = False
         if self.player.vel.y > 0:
             hits_plat = pg.sprite.spritecollide(self.player, self.platforms, False)
-            hits_lava = pg.sprite.spritecollide(self.player, self.lava, False)
-            hits_bullet = pg.sprite.spritecollide(self.player, self.monsterbullet, False)
-            hits_goblin = pg.sprite.spritecollide(self.player, self.goblins, False)
-            """hits_coin = pg.sprite.spritecollide(self.player, self.coins, False)
-            hits_sword = pg.sprite.spritecollide(self.player, self.goblins, False)
-            hits_monster = pg.sprite.spritecollide(self.player, self.monster, False)"""
             if hits_plat:
                 self.player.pos.y = hits_plat[0].rect.top
                 self.player.vel.y = 0
-            # DEATH
-            if hits_lava:
-                self.player.pos.y = hits_lava[0].rect.bottom
-                self.player.vel.y = 0
-                pg.mixer.music.stop()
-                self.player.hearts -= 10
-                if self.player.hearts < 0:
-                    lava_burning_sound.play()
-                    play_song('sounds/death_song.mp3')
-                    self.playing = False
-            elif hits_bullet:
-                self.player.hearts -= 5
-                if self.player.hearts < 0:
-                    pg.mixer.music.stop()
-                    play_song('sounds/death_song.mp3')
-                    pg.time.wait(500)
-                    self.playing = False
-            elif hits_goblin:
-                # if self.player.lives == 0:
-                self.player.hearts -= 4
-                death_sound_HIT.play()
-                if self.player.hearts < 0:
-                    pg.mixer.music.stop()
-                    play_song('sounds/death_song.mp3')
-                    pg.time.wait(500)
-                    self.playing = False
 
     def events(self):
         # game loop events
@@ -167,22 +191,30 @@ class Game:
 
     def show_go_screen(self):
         # game over screen
-        goblins_arr.clear()
+        """goblins_arr.clear()
         coin_arr.clear()
         player_arr.clear()
         monster_arr.clear()
         skel_arr.clear()
-        game_over_sound.play()
-        reset_plat_list()
+        reset_plat_list()"""
         if not self.running:
             return
         self.screen.blit(end_background, (0, 0))
+        if self.score > self.highscore:
+            self.highscore = self.score
+            self.draw_text("NEW HIGH SCORE!!!!!!", 40, GREEN, WIDTH/2, HEIGHT/2 + 40)
+            with open(path.join(self.dir, hs_file), 'w') as f:
+                f.write(str(self.score))
+        else:
+            self.draw_text("HIGH SCORE:: " + str(self.highscore), 40, GREEN, WIDTH/2, HEIGHT/2 + 60)
+        self.draw_text("FINAL SCORE:: " + str(self.score), 40, GREEN, WIDTH/2, HEIGHT/2)
         pg.display.flip()
-        self.wait_for_key()
         game_over_sound.stop()
+        play_song('sounds/death_song.mp3')
         pg.mixer.music.unpause()
+        self.wait_for_key()
 
-    def show_lc_screen(self):
+    """def show_lc_screen(self):
         # level complete screen
         goblins_arr.clear()
         coin_arr.clear()
@@ -194,11 +226,10 @@ class Game:
             return
         self.screen.blit(level_background, (0, 0))
         pg.display.flip()
-        self.wait_for_key()
+        self.wait_for_key()"""
 
     def wait_for_key(self):
         waiting = True
-        self.level_complete = False
         while waiting:
             self.clock.tick(FPS)
             for event in pg.event.get():
@@ -215,9 +246,9 @@ class Game:
                         self.running = False
                         waiting = False
 
-    def draw_text(self, text, size, color, x, y):
+    def draw_text(self, text, size, colors, x, y):
         font = pg.font.Font(self.font_name, size)
-        text_surface = font.render(text, True, color)
+        text_surface = font.render(text, True, colors)
         text_rect = text_surface.get_rect()
         text_rect.midtop = (int(x), int(y))
         self.screen.blit(text_surface, text_rect)
@@ -227,8 +258,6 @@ g = Game()
 g.show_start_screen()
 while g.running:
     g.new()
-    if g.coin_count == 0:
-        g.show_lc_screen()
     g.show_go_screen()
 
 pg.quit()

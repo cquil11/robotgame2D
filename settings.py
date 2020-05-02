@@ -7,6 +7,8 @@ TITLE = "ROBOT GAME"
 WIDTH = 800
 HEIGHT = 600
 FPS = 30
+FONT_NAME = 'arial'
+hs_file = "highscore.txt"
 
 # IMAGES
 start_background0 = pg.image.load('images/start_background1.png')
@@ -20,8 +22,8 @@ pleftj = pg.image.load('images/player_jump_left.png')
 prightj = pg.image.load('images/player_jump_right.png')
 plefth = pg.image.load('images/player_hit_left.png')
 prighth = pg.image.load('images/player_hit_right.png')
-hamel_monster = pg.image.load('images/monster.png')
-hamel_open = pg.image.load('images/hamel_monster_open.png')
+monster = pg.image.load('images/monster.png')
+monster_open = pg.image.load('images/hamel_monster_open.png')
 end_background = pg.image.load('images/game_over.png')
 level_background = pg.image.load('images/level_complete.png')
 platform_320 = pg.image.load('images/plat_320.png')
@@ -45,7 +47,6 @@ lava_burning_sound = pg.mixer.Sound('sounds/burning_sound.wav')
 sword_swing = pg.mixer.Sound('sounds/sword_sound.wav')
 scream_sound = pg.mixer.Sound('sounds/death_scream.wav')
 coin_sound = pg.mixer.Sound('sounds/coin_pickup.wav')
-hamel_sound = pg.mixer.Sound('sounds/hamel_intro.wav')
 
 # MUSIC
 songs = ['sounds/uzi_music.mp3', 'sounds/death_song.mp3', 'sounds/computer_startup.mp3', 'sounds/game_music.mp3']

@@ -96,7 +96,7 @@ class Monster(pg.sprite.Sprite):
     def __init__(self, game, x, y):
         pg.sprite.Sprite.__init__(self)
         self.game = game
-        self.image = hamel_monster
+        self.image = monster
         self._layer = monster_layer
         self.rect = self.image.get_rect()
         self.rect.x = x
@@ -158,7 +158,7 @@ class Coin(pg.sprite.Sprite):
                 self.kill()"""
         for coi in coin_arr:
             if abs(coi.rect.x - player_arr[0].rect.x) < 10 and abs(coi.rect.y - player_arr[0].rect.y) < 20:
-                self.game.score += 100
+                self.game.score += 500
                 coin_sound.play()
                 self.game.coin_count -= 1
                 coi.kill()
@@ -223,15 +223,15 @@ class Goblin(pg.sprite.Sprite):
         self.rect.x = x_pos
 
     def update(self):
-        for gob in goblins_arr:
+        """for gob in goblins_arr:
             for i in range(0, len(goblins_arr)):
-                """diff_sign = False
-                if gob is not goblins_arr[i] and gob.vx < 0 and goblins_arr[i].vx > 0 or gob.vx > 0 and goblins_arr[i].vx < 0:
-                    diff_sign = True"""
+                #diff_sign = False
+                #if gob is not goblins_arr[i] and gob.vx < 0 and goblins_arr[i].vx > 0 or gob.vx > 0 and goblins_arr[i].vx < 0:
+                   #diff_sign = True
                 if gob is not goblins_arr[i] and abs(gob.rect.x - goblins_arr[i].rect.x) < 20 \
-                        and abs(gob.rect.y - goblins_arr[i].rect.y) < 20:
+                        and abs(gob.rect.y - goblins_arr[i].rect.y) < 30:
                     self.vx = -self.vx
-                    goblins_arr[i].vx = -goblins_arr[i].vx
+                    goblins_arr[i].vx = -goblins_arr[i].vx"""
         if self.rect.x > self.x_upper_bound:
             self.vx = -self.vx
         if self.rect.x < self.x_lower_bound:
