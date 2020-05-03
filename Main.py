@@ -22,6 +22,10 @@ class Game:
         play_song('sounds/computer_startup.mp3')
         self.running = True
         self.font_name = pg.font.match_font(FONT_NAME)
+        self.load_data()
+
+    def load_data(self):
+        # load high score
         self.dir = path.dirname(__file__)
         with open(path.join(self.dir, hs_file), 'w') as f:
             try:
@@ -213,20 +217,6 @@ class Game:
         play_song('sounds/death_song.mp3')
         pg.mixer.music.unpause()
         self.wait_for_key()
-
-    """def show_lc_screen(self):
-        # level complete screen
-        goblins_arr.clear()
-        coin_arr.clear()
-        player_arr.clear()
-        monster_arr.clear()
-        skel_arr.clear()
-        reset_plat_list()
-        if not self.running:
-            return
-        self.screen.blit(level_background, (0, 0))
-        pg.display.flip()
-        self.wait_for_key()"""
 
     def wait_for_key(self):
         waiting = True
