@@ -1,6 +1,7 @@
 # File I/O
 
-
+#"python.analysis.extraPaths": ["C:\Users\harri\RobotGame"],
+#"python.pythonPath": "/path/to/your/venv/bin/python",
 import pygame as pg
 from pygame.locals import *
 import random
