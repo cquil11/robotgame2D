@@ -14,18 +14,24 @@ class Player(pg.sprite.Sprite):
         self._layer = player_layer
         self.image = pleft
         self.rect = self.image.get_rect()
+        # Player stats (make several values configurable/upgradable)
+        self.max_hearts = 100
+        self.hearts = float(self.max_hearts)
+        self.max_mana = 100
+        self.mana = 100  # Mana system
+        self.max_combo = 5
+        self.attack_power = 1
+        self.speed_mult = 1.0
         self.pos = vec(WIDTH /2, HEIGHT / 2)
         self.vel = vec(0, 0)
         self.acc = vec(0, 0)
         self.lives = 3
-        self.hearts = float(100)
         self.attacking = False
         self.attack_timer = 0
         self.facing_right = False
         self.attack_combo = 0  # Track combo hits
         self.last_attack_time = 0  # Track time for combo window
-        self.mana = 100  # Mana system
-        self.max_mana = 100
+        # Mana settings
         self.mana_regen_rate = 0.2  # Mana per frame
         self.fireball_cost = 15  # Cost to cast fireball (reduced for balance)
         self.fireball_cooldown = 0  # Cooldown timer
@@ -62,7 +68,7 @@ class Player(pg.sprite.Sprite):
         current_time = pg.time.get_ticks()
         # Check for combo (hit within 1 second of last attack)
         if current_time - self.last_attack_time < 1000:
-            self.attack_combo = min(self.attack_combo + 1, 5)  # Max 5 combo
+            self.attack_combo = min(self.attack_combo + 1, self.max_combo)
         else:
             self.attack_combo = 1  # Reset combo
 
@@ -84,14 +90,15 @@ class Player(pg.sprite.Sprite):
         self.acc = vec(0, PLAYER_GRAV)
         keys = pg.key.get_pressed()
         if keys[pg.K_LEFT] | keys[pg.K_a]:
-            self.acc.x = -PLAYER_ACC
+            # Apply player's speed multiplier
+            self.acc.x = -PLAYER_ACC * self.speed_mult
             self.facing_right = False
             if self.vel.y >= 0:
                 self.image = pleft
             if self.vel.y < 0:
                 self.image = pleftj
         if keys[pg.K_RIGHT] | keys[pg.K_d]:
-            self.acc.x = PLAYER_ACC
+            self.acc.x = PLAYER_ACC * self.speed_mult
             self.facing_right = True
             if self.vel.y >= 0:
                 self.image = pright
@@ -303,6 +310,106 @@ class Fireball(pg.sprite.Sprite):
         # Remove if off screen
         if self.rect.right < 0 or self.rect.left > WIDTH or self.rect.bottom < 0 or self.rect.top > HEIGHT:
             self.kill()
+
+
+class Explosion(pg.sprite.Sprite):
+    """Simple explosion animation that also applies area damage on creation.
+
+    Parameters:
+      game: reference to Game
+      pos: (x,y) center of explosion
+      radius: pixel radius for splash damage
+      damage: integer damage to apply to nearby enemies
+      exclude_sprite: a sprite to exclude from splash (e.g. the directly hit target)
+    """
+    def __init__(self, game, pos, radius=48, damage=2, exclude_sprite=None):
+        pg.sprite.Sprite.__init__(self)
+        self.game = game
+        self._layer = projectile_layer
+        self.pos = pos
+        self.radius = radius
+        self.damage = damage
+        self.exclude = exclude_sprite
+
+        # Pre-generate simple expanding-circle frames for animation
+        self.frames = []
+        sizes = [int(radius * t) for t in (0.25, 0.5, 0.75, 1.0)]
+        for s in sizes:
+            surf = pg.Surface((s*2, s*2), pg.SRCALPHA)
+            # Outer glow
+            pg.draw.circle(surf, (255, 140, 0, 160), (s, s), s)
+            # Inner bright
+            pg.draw.circle(surf, (255, 220, 0, 220), (s, s), max(1, int(s*0.5)))
+            self.frames.append(surf)
+
+        self.frame_index = 0
+        self.frame_timer = 0
+        self.frame_delay = 4
+        self.image = self.frames[0]
+        self.rect = self.image.get_rect(center=pos)
+
+        # Apply immediate splash damage to nearby enemies (excluding provided sprite)
+        try:
+            # Goblins
+            for g in list(self.game.goblins):
+                if g is self.exclude:
+                    continue
+                dx = g.rect.centerx - pos[0]
+                dy = g.rect.centery - pos[1]
+                if dx*dx + dy*dy <= radius*radius:
+                    try:
+                        g.take_damage(damage)
+                    except Exception:
+                        pass
+            # Skeletons
+            for s in list(self.game.skeletons):
+                if s is self.exclude:
+                    continue
+                dx = s.rect.centerx - pos[0]
+                dy = s.rect.centery - pos[1]
+                if dx*dx + dy*dy <= radius*radius:
+                    try:
+                        s.take_damage(damage)
+                    except Exception:
+                        pass
+            # Monster (boss)
+            for m in list(self.game.monster):
+                if m is self.exclude:
+                    continue
+                dx = m.rect.centerx - pos[0]
+                dy = m.rect.centery - pos[1]
+                if dx*dx + dy*dy <= radius*radius:
+                    try:
+                        m.take_damage(damage)
+                    except Exception:
+                        pass
+        except Exception:
+            pass
+
+        # play explosion sound if available (use globals to avoid static name errors)
+        try:
+            snd = globals().get('explosion_sound', None)
+            if snd:
+                try:
+                    snd.play()
+                except Exception:
+                    pass
+        except Exception:
+            pass
+
+    def update(self):
+        # Advance animation and kill when done
+        self.frame_timer += 1
+        if self.frame_timer >= self.frame_delay:
+            self.frame_timer = 0
+            self.frame_index += 1
+            if self.frame_index >= len(self.frames):
+                self.kill()
+                return
+            self.image = self.frames[self.frame_index]
+            # update rect to keep center
+            center = self.rect.center
+            self.rect = self.image.get_rect(center=center)
 
 
 class Arrow(pg.sprite.Sprite):
@@ -576,8 +683,15 @@ class Goblin(pg.sprite.Sprite):
         else:
             i = 0  # Fallback
 
-        y_pos = platform_arr[i][1] - 30
-        x_pos = random.randrange(platform_arr[i][0], min(platform_arr[i][0] + platform_arr[i][2] - 20, WIDTH - 20))
+        # platform_arr may contain floats (from divisions in settings). Cast to int for pixel positions.
+        y_pos = int(platform_arr[i][1] - 30)
+        x_start = int(platform_arr[i][0])
+        x_end = int(min(platform_arr[i][0] + platform_arr[i][2] - 20, WIDTH - 20))
+        # Ensure range is valid for randrange
+        if x_end <= x_start:
+            x_pos = x_start
+        else:
+            x_pos = random.randrange(x_start, x_end)
 
         self.current_platform = i
         self.rect.y = y_pos
@@ -718,7 +832,13 @@ class Goblin(pg.sprite.Sprite):
         """Damage the goblin"""
         self.health -= damage
         if self.health <= 0:
-            death_sound_HIT.play()
+            # Play goblin-specific death sound if available
+            try:
+                snd = globals().get('goblin_death_sound', None)
+                if snd:
+                    snd.play()
+            except Exception:
+                pass
             self.kill()
             if self in goblins_arr:
                 goblins_arr.remove(self)
@@ -928,7 +1048,13 @@ class Skeleton(pg.sprite.Sprite):
         """Damage the skeleton"""
         self.health -= damage
         if self.health <= 0:
-            death_sound_HIT.play()
+            # Play skeleton-specific death sound if available
+            try:
+                snd = globals().get('skeleton_death_sound', None)
+                if snd:
+                    snd.play()
+            except Exception:
+                pass
             self.kill()
             if self in skel_arr:
                 skel_arr.remove(self)
