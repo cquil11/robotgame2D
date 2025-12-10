@@ -13,8 +13,10 @@ except Exception:
 TITLE = "ROBOT GAME"
 WIDTH = 800
 HEIGHT = 600
+UI_PANEL_HEIGHT = 80
+WINDOW_HEIGHT = HEIGHT + UI_PANEL_HEIGHT  # 680 total for windowed display
 FPS = 30
-FONT_NAME = 'arial'
+FONT_NAME = 'courier new'
 hs_file = "highscore.txt"
 
 
@@ -50,69 +52,51 @@ def safe_load_sound(pth):
         return DummySound()
 
 # IMAGES
-start_background0 = safe_load_image('images/start_background1.png')
-start_background1 = safe_load_image('images/start_background2.png')
-start_background2 = safe_load_image('images/start_background3.png')
-start_background3 = safe_load_image('images/start_background4.png')
-game_background = safe_load_image('images/deadfriends.png')
-pleft = safe_load_image('images/player_left.png')
-pright = safe_load_image('images/player_right.png')
-pleftj = safe_load_image('images/player_jump_left.png')
-prightj = safe_load_image('images/player_jump_right.png')
-plefth = safe_load_image('images/player_hit_left.png')
-prighth = safe_load_image('images/player_hit_right.png')
-monster = safe_load_image('images/monster.png')
-monster_open = safe_load_image('images/hamel_monster_open.png')
-end_background = safe_load_image('images/game_over.png')
-level_background = safe_load_image('images/level_complete.png')
-platform_image = safe_load_image('images/platform.png')
-lava = safe_load_image('images/lava.png')
-lava_ball = safe_load_image('images/lava_ball.png')
-gleft = safe_load_image('images/Goblin2.png')
-gright = safe_load_image('images/Goblin.png')
-sleft = safe_load_image('images/skel_left.png')
-sright = safe_load_image('images/skel_right.png')
-coin = safe_load_image('images/coin.png')
-heart_image = safe_load_image('images/heart.png')
-FONT_NAME = 'courier new'
+pleft = safe_load_image('images/player/player_left.png')
+pright = safe_load_image('images/player/player_right.png')
+pleftj = safe_load_image('images/player/player_jump_left.png')
+prightj = safe_load_image('images/player/player_jump_right.png')
+plefth = safe_load_image('images/player/player_hit_left.png')
+prighth = safe_load_image('images/player/player_hit_right.png')
+
+# Attack animation frames
+attack_normal_right = [safe_load_image(f'images/player/player_attack_normal_right_{i}.png') for i in range(3)]
+attack_normal_left = [safe_load_image(f'images/player/player_attack_normal_left_{i}.png') for i in range(3)]
+attack_critical_right = [safe_load_image(f'images/player/player_attack_critical_right_{i}.png') for i in range(3)]
+attack_critical_left = [safe_load_image(f'images/player/player_attack_critical_left_{i}.png') for i in range(3)]
+attack_heavy_right = [safe_load_image(f'images/player/player_attack_heavy_right_{i}.png') for i in range(4)]
+attack_heavy_left = [safe_load_image(f'images/player/player_attack_heavy_left_{i}.png') for i in range(4)]
+
+# IMAGES - end of game UI and sprites
+end_background = safe_load_image('images/backgrounds/game_over.png')
+level_background = safe_load_image('images/backgrounds/level_complete.png')
+platform_image = safe_load_image('images/ui/platform.png')
+lava = safe_load_image('images/ui/lava.png')
+lava_ball = safe_load_image('images/ui/lava_ball.png')
+gleft = safe_load_image('images/enemies/Goblin2.png')
+gright = safe_load_image('images/enemies/Goblin.png')
+sleft = safe_load_image('images/enemies/skel_left.png')
+sright = safe_load_image('images/enemies/skel_right.png')
+coin = safe_load_image('images/ui/coin.png')
+heart_image = safe_load_image('images/ui/heart.png')
 
 # Optional new generated sprites (fall back to defaults if missing)
 try:
-    monster_medieval = pg.image.load('images/monster_medieval.png')
+    monster_scary = pg.image.load('images/monsters/monster_scary.png')
 except Exception:
-    monster_medieval = monster
+    # Fallback: create a simple red circle
+    monster_scary = pg.Surface((128, 128), pg.SRCALPHA)
+    pg.draw.circle(monster_scary, (200, 50, 50), (64, 64), 50)
 
 try:
-    monster_medieval_pixel = pg.image.load('images/monster_medieval_pixel.png')
-except Exception:
-    monster_medieval_pixel = monster
-
-try:
-    arrow_skeleton = pg.image.load('images/arrow_skeleton.png')
+    arrow_skeleton = pg.image.load('images/enemies/arrow_skeleton.png')
 except Exception:
     # create a tiny surface fallback
     arrow_skeleton = pg.Surface((48, 12), pg.SRCALPHA)
     arrow_skeleton.fill((120, 80, 40))
 
-try:
-    arrow_skeleton_left = pg.image.load('images/arrow_skeleton_left.png')
-except Exception:
-    arrow_skeleton_left = pg.transform.flip(arrow_skeleton, True, False)
-
-# Optional animation frames for arrows
+# Optional animation frames for arrows (not currently generated)
 arrow_skeleton_frames = []
-for i in range(3):
-    try:
-        fimg = pg.image.load(f'images/arrow_skeleton_anim_{i}.png')
-        arrow_skeleton_frames.append(fimg)
-    except Exception:
-        break
-
-# Pixel arrow fallback
-try:
-    arrow_skeleton_pixel = pg.image.load('images/arrow_skeleton_pixel.png')
-except Exception:
-    arrow_skeleton_pixel = arrow_skeleton
 
 # SOUNDS
 game_over_sound = safe_load_sound('sounds/game_over_sound.wav')
@@ -148,6 +132,8 @@ mob_layer = 3
 coin_layer = 2
 projectile_layer = 2
 monster_layer = 3
+particle_layer = 4
+powerup_layer = 5
 
 
 # drawing player lives
@@ -157,13 +143,6 @@ def draw_lives(surf, x, y, lives, img):
         img_rect.x = x + 25 * i
         img_rect.y = y
         surf.blit(img, img_rect)
-
-
-# main menu background
-backgrounds = [safe_load_image('images/start_background1.png'),
-               safe_load_image('images/start_background2.png'),
-               safe_load_image('images/start_background4.png'),
-               safe_load_image('images/start_background3.png')]
 
 
 # playing songs
@@ -218,66 +197,141 @@ def get_level_platforms(level):
     # Level-specific seeds for consistent but varied layouts
     random.seed(level * 1000 + level)
     
+    # Level 1: Special beginner-friendly layout
+    if level == 1:
+        # Simple, safe layout with clear path - perfect for tutorial/intro
+        platform_arr.append([0, HEIGHT - 80, 150, 20, 2])           # Left platform (start)
+        platform_arr.append([200, HEIGHT - 80, 150, 20, 2])         # Left-middle platform
+        platform_arr.append([400, HEIGHT - 80, 150, 20, 2])         # Right-middle platform  
+        platform_arr.append([600, HEIGHT - 80, 150, 20, 2])         # Right platform
+        platform_arr.append([100, HEIGHT - 200, 140, 20, 2])        # Left middle tier
+        platform_arr.append([350, HEIGHT - 240, 100, 20, 2])        # Center top tier
+        platform_arr.append([550, HEIGHT - 200, 140, 20, 2])        # Right middle tier
+        return
+    
+    # Choose a layout pattern based on level
+    pattern = level % 10  # 10 different patterns that rotate
+    
     # Boss levels (every 5th) get simpler, more open layouts for fireball room
     if level % 5 == 0:
         # Simple boss arena with wide open spaces
-        # Bottom layer - 2 wide platforms with gap in middle
         platform_arr.append([0, HEIGHT - 80, WIDTH // 2 - 100, 20, 2])
         platform_arr.append([WIDTH // 2 + 100, HEIGHT - 80, WIDTH // 2 - 100, 20, 2])
-        
-        # Middle layer - 2-3 platforms with good spacing
         platform_arr.append([80, HEIGHT - 220, 150, 20, 2])
         platform_arr.append([WIDTH - 230, HEIGHT - 220, 150, 20, 2])
-        
-        # Upper-middle - single central platform for mobility
         platform_arr.append([WIDTH // 2 - 100, HEIGHT // 2 + 20, 200, 20, 2])
-        
-        # Upper layer - 2 side platforms
         platform_arr.append([60, HEIGHT // 3, 140, 20, 2])
         platform_arr.append([WIDTH - 200, HEIGHT // 3, 140, 20, 2])
         
+    elif pattern == 0:
+        # STAIRCASE LEFT - platforms ascending from left to right
+        platform_arr.append([20, HEIGHT - 80, 180, 20, 2])
+        platform_arr.append([220, HEIGHT - 160, 160, 20, 2])
+        platform_arr.append([400, HEIGHT - 240, 140, 20, 2])
+        platform_arr.append([560, HEIGHT - 320, 120, 20, 2])
+        platform_arr.append([100, HEIGHT - 400, 150, 20, 2])
+        platform_arr.append([450, HEIGHT - 480, 180, 20, 2])
+        
+    elif pattern == 1:
+        # STAIRCASE RIGHT - platforms descending from left to right
+        platform_arr.append([20, HEIGHT - 480, 160, 20, 2])
+        platform_arr.append([200, HEIGHT - 400, 140, 20, 2])
+        platform_arr.append([360, HEIGHT - 320, 150, 20, 2])
+        platform_arr.append([530, HEIGHT - 240, 140, 20, 2])
+        platform_arr.append([150, HEIGHT - 160, 180, 20, 2])
+        platform_arr.append([550, HEIGHT - 80, 180, 20, 2])
+        
+    elif pattern == 2:
+        # PILLARS - tall vertical columns of platforms
+        platform_arr.append([80, HEIGHT - 80, 100, 20, 2])
+        platform_arr.append([80, HEIGHT - 200, 100, 20, 2])
+        platform_arr.append([80, HEIGHT - 320, 100, 20, 2])
+        platform_arr.append([350, HEIGHT - 140, 100, 20, 2])
+        platform_arr.append([350, HEIGHT - 260, 100, 20, 2])
+        platform_arr.append([350, HEIGHT - 380, 100, 20, 2])
+        platform_arr.append([620, HEIGHT - 80, 100, 20, 2])
+        platform_arr.append([620, HEIGHT - 200, 100, 20, 2])
+        platform_arr.append([620, HEIGHT - 320, 100, 20, 2])
+        
+    elif pattern == 3:
+        # PYRAMID - platforms form a pyramid shape
+        platform_arr.append([320, HEIGHT - 80, 160, 20, 2])
+        platform_arr.append([200, HEIGHT - 180, 120, 20, 2])
+        platform_arr.append([480, HEIGHT - 180, 120, 20, 2])
+        platform_arr.append([100, HEIGHT - 280, 100, 20, 2])
+        platform_arr.append([350, HEIGHT - 280, 100, 20, 2])
+        platform_arr.append([600, HEIGHT - 280, 100, 20, 2])
+        platform_arr.append([250, HEIGHT - 380, 80, 20, 2])
+        platform_arr.append([470, HEIGHT - 380, 80, 20, 2])
+        platform_arr.append([360, HEIGHT - 480, 80, 20, 2])
+        
+    elif pattern == 4:
+        # ZIGZAG - alternating left-right platforms
+        platform_arr.append([50, HEIGHT - 80, 200, 20, 2])
+        platform_arr.append([550, HEIGHT - 160, 200, 20, 2])
+        platform_arr.append([50, HEIGHT - 240, 200, 20, 2])
+        platform_arr.append([550, HEIGHT - 320, 200, 20, 2])
+        platform_arr.append([250, HEIGHT - 400, 200, 20, 2])
+        platform_arr.append([50, HEIGHT - 480, 150, 20, 2])
+        platform_arr.append([600, HEIGHT - 480, 150, 20, 2])
+        
+    elif pattern == 6:
+        # FLOATING ISLANDS - scattered small platforms
+        platform_arr.append([100, HEIGHT - 100, 90, 20, 2])
+        platform_arr.append([300, HEIGHT - 150, 80, 20, 2])
+        platform_arr.append([500, HEIGHT - 120, 85, 20, 2])
+        platform_arr.append([650, HEIGHT - 200, 90, 20, 2])
+        platform_arr.append([150, HEIGHT - 250, 100, 20, 2])
+        platform_arr.append([400, HEIGHT - 280, 75, 20, 2])
+        platform_arr.append([600, HEIGHT - 330, 80, 20, 2])
+        platform_arr.append([200, HEIGHT - 380, 90, 20, 2])
+        platform_arr.append([450, HEIGHT - 420, 85, 20, 2])
+        platform_arr.append([100, HEIGHT - 480, 100, 20, 2])
+        platform_arr.append([600, HEIGHT - 500, 95, 20, 2])
+        
+    elif pattern == 7:
+        # PARKOUR - challenging jumps with gaps
+        platform_arr.append([50, HEIGHT - 80, 140, 20, 2])
+        platform_arr.append([280, HEIGHT - 140, 100, 20, 2])
+        platform_arr.append([480, HEIGHT - 200, 90, 20, 2])
+        platform_arr.append([640, HEIGHT - 140, 110, 20, 2])
+        platform_arr.append([450, HEIGHT - 300, 100, 20, 2])
+        platform_arr.append([200, HEIGHT - 360, 120, 20, 2])
+        platform_arr.append([520, HEIGHT - 440, 90, 20, 2])
+        platform_arr.append([100, HEIGHT - 500, 130, 20, 2])
+        
+    elif pattern == 8:
+        # SPLIT ARENA - two separate sides with bridge
+        platform_arr.append([20, HEIGHT - 80, 280, 20, 2])
+        platform_arr.append([500, HEIGHT - 80, 280, 20, 2])
+        platform_arr.append([50, HEIGHT - 200, 180, 20, 2])
+        platform_arr.append([570, HEIGHT - 200, 180, 20, 2])
+        platform_arr.append([80, HEIGHT - 320, 140, 20, 2])
+        platform_arr.append([580, HEIGHT - 320, 140, 20, 2])
+        platform_arr.append([320, HEIGHT - 260, 160, 20, 2])  # Bridge
+        platform_arr.append([150, HEIGHT - 440, 120, 20, 2])
+        platform_arr.append([530, HEIGHT - 440, 120, 20, 2])
+        
+    elif pattern == 9:
+        # SPIRAL - platforms in a spiral pattern
+        platform_arr.append([350, HEIGHT - 80, 150, 20, 2])
+        platform_arr.append([550, HEIGHT - 160, 130, 20, 2])
+        platform_arr.append([600, HEIGHT - 280, 120, 20, 2])
+        platform_arr.append([450, HEIGHT - 380, 140, 20, 2])
+        platform_arr.append([250, HEIGHT - 440, 130, 20, 2])
+        platform_arr.append([80, HEIGHT - 360, 120, 20, 2])
+        platform_arr.append([50, HEIGHT - 240, 140, 20, 2])
+        platform_arr.append([150, HEIGHT - 120, 150, 20, 2])
+        
     else:
-        # Normal levels - more complex layouts
-        num_platforms = random.randint(8, 11)
-        
-        # Bottom layer - 2-4 platforms spread across the floor
-        bottom_count = random.randint(2, 4)
-        for i in range(bottom_count):
-            x = random.randrange(i * (WIDTH // bottom_count), (i + 1) * (WIDTH // bottom_count) - 100)
-            w = random.randrange(60, 220)
-            # Ensure it doesn't go off screen
-            if x + w > WIDTH:
-                w = WIDTH - x
-            platform_arr.append([x, HEIGHT - 80, w, 20, 2])
-        
-        # Middle-lower layer - scattered platforms
-        mid_low_count = random.randint(2, 3)
-        for i in range(mid_low_count):
+        # RANDOM CHAOS - completely random placement
+        num_platforms = random.randint(9, 13)
+        for i in range(num_platforms):
             x = random.randrange(20, WIDTH - 180)
-            y = random.randrange(HEIGHT - 240, HEIGHT - 140)
-            w = random.randrange(70, 180)
-            if x + w > WIDTH:
-                w = WIDTH - x - 10
-            platform_arr.append([x, y, w, 20, 2])
-        
-        # Middle layer - more variation in placement
-        mid_count = random.randint(2, 3)
-        for i in range(mid_count):
-            x = random.randrange(30, WIDTH - 160)
-            y = random.randrange(HEIGHT // 2 - 50, HEIGHT // 2 + 80)
-            w = random.randrange(60, 150)
-            if x + w > WIDTH:
-                w = WIDTH - x - 10
-            platform_arr.append([x, y, w, 20, 2])
-        
-        # Upper layer - smaller, more challenging platforms
-        remaining = num_platforms - len(platform_arr)
-        for i in range(remaining):
-            x = random.randrange(40, WIDTH - 140)
-            y = random.randrange(HEIGHT // 3 - 40, HEIGHT // 3 + 80)
-            w = random.randrange(50, 130)
-            if x + w > WIDTH:
-                w = WIDTH - x - 10
+            y = random.randrange(HEIGHT - 500, HEIGHT - 60)
+            w = random.randrange(70, 200)
+            if x + w > WIDTH - 10:
+                w = WIDTH - x - 20
             platform_arr.append([x, y, w, 20, 2])
     
     # Reset random seed to not affect other random calls

@@ -3,6 +3,7 @@ from settings import *
 import pygame as pg
 import random
 import math
+from os import path
 
 vec = pg.math.Vector2
 
@@ -29,12 +30,30 @@ class Player(pg.sprite.Sprite):
         self.attacking = False
         self.attack_timer = 0
         self.facing_right = False
+        self.attack_frame = 0  # Current animation frame
+        self.attack_frame_timer = 0  # Timer for frame advancement
         self.attack_combo = 0  # Track combo hits
         self.last_attack_time = 0  # Track time for combo window
+        # Attack energy system for charge attacks
+        self.attack_energy = 0  # Builds up over time during attack stance
+        self.max_attack_energy = 100
+        self.attack_energy_regen = 3.0  # Builds up during charging
+        self.attack_type = 'normal'  # 'normal', 'heavy', 'critical'
+        self.charge_timer = 0  # Tracks charge time for heavy attacks
+        self.consecutive_hits = 0  # Tracks hits in current combo
         # Mana settings
         self.mana_regen_rate = 0.2  # Mana per frame
         self.fireball_cost = 15  # Cost to cast fireball (reduced for balance)
         self.fireball_cooldown = 0  # Cooldown timer
+        # Powerup effects
+        self.shield_active = False
+        self.shield_time = 0
+        self.damage_boost_active = False
+        self.damage_boost_time = 0
+        self.damage_boost_mult = 1.0
+        self.speed_boost_active = False
+        self.speed_boost_time = 0
+        self.speed_mult_boost = 1.0
 
     def jump(self):
         # only jump if on platform
@@ -54,7 +73,23 @@ class Player(pg.sprite.Sprite):
         # Store last attack time for combo window tracking
         self.last_attack_time = current_time
         self.attacking = True
-        self.attack_timer = 12 if self.attack_combo >= 2 else 10  # Longer attack for combos
+        
+        # Reset animation
+        self.attack_frame = 0
+        self.attack_frame_timer = 0
+        
+        # Determine attack type based on charge level
+        if self.charge_timer >= 20:  # Charged heavy attack
+            self.attack_type = 'heavy'
+            self.attack_timer = 10  # Reduced from 16
+        elif self.consecutive_hits >= 4:  # Critical after 4+ hits
+            self.attack_type = 'critical'
+            self.attack_timer = 8  # Reduced from 14
+        else:
+            self.attack_type = 'normal'
+            self.attack_timer = 6  # Reduced from 10
+        
+        self.charge_timer = 0  # Reset charge after attacking
         
         if self.image == pright or self.facing_right:
             self.image = prighth
@@ -69,15 +104,67 @@ class Player(pg.sprite.Sprite):
         # Check for combo (hit within 1 second of last attack)
         if current_time - self.last_attack_time < 1000:
             self.attack_combo = min(self.attack_combo + 1, self.max_combo)
+            self.consecutive_hits = min(self.consecutive_hits + 1, 10)
         else:
             self.attack_combo = 1  # Reset combo
+            self.consecutive_hits = 1
+        
+        # Regenerate some attack energy on successful hits
+        self.attack_energy = min(self.attack_energy + 20, self.max_attack_energy)
 
     def update(self):
         # Handle attack timer
         if self.attacking:
+            # Update attack animation frames
+            self.attack_frame_timer += 1
+            
+            # Determine frame count and speed based on attack type
+            if self.attack_type == 'heavy':
+                total_frames = 4
+                frames_per_frame = 3  # Slower, more impactful
+            else:  # normal or critical
+                total_frames = 3
+                frames_per_frame = 2  # Faster attacks
+            
+            # Advance to next frame
+            if self.attack_frame_timer >= frames_per_frame:
+                self.attack_frame_timer = 0
+                self.attack_frame += 1
+                if self.attack_frame >= total_frames:
+                    self.attack_frame = total_frames - 1  # Stay on last frame
+            
+            # Set the appropriate animation frame
+            if self.attack_type == 'heavy':
+                frames = attack_heavy_right if self.facing_right else attack_heavy_left
+            elif self.attack_type == 'critical':
+                frames = attack_critical_right if self.facing_right else attack_critical_left
+            else:  # normal
+                frames = attack_normal_right if self.facing_right else attack_normal_left
+            
+            if self.attack_frame < len(frames):
+                self.image = frames[self.attack_frame]
+            
             self.attack_timer -= 1
             if self.attack_timer <= 0:
-                self.attacking = False
+                self.attacking = False        # Update powerup timers
+        if self.shield_active:
+            self.shield_time -= 1
+            if self.shield_time <= 0:
+                self.shield_active = False
+        
+        if self.damage_boost_active:
+            self.damage_boost_time -= 1
+            if self.damage_boost_time <= 0:
+                self.damage_boost_active = False
+        
+        if self.speed_boost_active:
+            self.speed_boost_time -= 1
+            if self.speed_boost_time <= 0:
+                self.speed_boost_active = False
+        
+        # Regenerate attack energy when not attacking
+        if not self.attacking and self.attack_energy < self.max_attack_energy:
+            self.attack_energy = min(self.attack_energy + self.attack_energy_regen, self.max_attack_energy)
         
         # Regenerate mana
         if self.mana < self.max_mana:
@@ -87,18 +174,25 @@ class Player(pg.sprite.Sprite):
         if self.fireball_cooldown > 0:
             self.fireball_cooldown -= 1
         
+        # Reset consecutive hits if not attacking for more than 1.5 seconds
+        if pg.time.get_ticks() - self.last_attack_time > 1500:
+            self.consecutive_hits = 0
+        
         self.acc = vec(0, PLAYER_GRAV)
         keys = pg.key.get_pressed()
         if keys[pg.K_LEFT] | keys[pg.K_a]:
-            # Apply player's speed multiplier
-            self.acc.x = -PLAYER_ACC * self.speed_mult
+            # Apply player's speed multiplier and speed boost
+            speed_multiplier = self.speed_mult * self.speed_mult_boost if self.speed_boost_active else self.speed_mult
+            self.acc.x = -PLAYER_ACC * speed_multiplier
             self.facing_right = False
             if self.vel.y >= 0:
                 self.image = pleft
             if self.vel.y < 0:
                 self.image = pleftj
         if keys[pg.K_RIGHT] | keys[pg.K_d]:
-            self.acc.x = PLAYER_ACC * self.speed_mult
+            # Apply player's speed multiplier and speed boost
+            speed_multiplier = self.speed_mult * self.speed_mult_boost if self.speed_boost_active else self.speed_mult
+            self.acc.x = PLAYER_ACC * speed_multiplier
             self.facing_right = True
             if self.vel.y >= 0:
                 self.image = pright
@@ -128,29 +222,52 @@ class Player(pg.sprite.Sprite):
         return None
     
     def get_attack_rect(self):
-        """Returns the hitbox for sword attack"""
+        """Returns the hitbox for sword attack - width matches player model"""
         if not self.attacking:
             return None
         
-        # Attack range increases with combo (reduced scaling)
-        base_range = 30
-        attack_range = base_range + (self.attack_combo - 1) * 5  # +5 pixels per combo level (was 10)
-        attack_height = 25 + (self.attack_combo - 1) * 3  # Slightly taller hitbox for combos (was 5)
+        # Attack width matches player width
+        attack_width = self.rect.width
+        attack_height = 25 + (self.attack_combo - 1) * 3
+        
+        # Heavy attacks have larger hitbox
+        if self.attack_type == 'heavy':
+            attack_height += 8
+        # Critical attacks have taller hitbox
+        elif self.attack_type == 'critical':
+            attack_height += 10
         
         if self.facing_right:
             # Attack to the right
             attack_rect = pg.Rect(self.rect.right, self.rect.centery - attack_height // 2, 
-                                 attack_range, attack_height)
+                                 attack_width, attack_height)
         else:
             # Attack to the left
-            attack_rect = pg.Rect(self.rect.left - attack_range, self.rect.centery - attack_height // 2, 
-                                 attack_range, attack_height)
+            attack_rect = pg.Rect(self.rect.left - attack_width, self.rect.centery - attack_height // 2, 
+                                 attack_width, attack_height)
         
         return attack_rect
     
     def get_attack_damage(self):
-        """Returns damage based on combo level"""
-        return self.attack_combo  # 1, 2, or 3 damage based on combo
+        """Returns damage based on attack type, combo level, energy, and powerups"""
+        base = getattr(self, 'attack_power', 1)
+        combo_bonus = max(0, self.attack_combo - 1) * 0.5  # +0.5 per combo level
+        
+        # Attack type modifiers
+        type_multiplier = 1.0
+        if self.attack_type == 'heavy':
+            type_multiplier = 2.0  # Double damage for heavy attacks
+        elif self.attack_type == 'critical':
+            type_multiplier = 1.5  # 1.5x damage for critical hits
+        
+        # Energy bonus (up to 100% bonus at full energy)
+        energy_bonus = (self.attack_energy / self.max_attack_energy) * 0.5  # Up to +50% from energy
+        self.attack_energy = 0  # Drain energy on attack
+        
+        # Apply damage boost powerup
+        damage_mult = self.damage_boost_mult if self.damage_boost_active else 1.0
+        
+        return int((base + combo_bonus) * type_multiplier * (1.0 + energy_bonus) * damage_mult)
 
     def get_pos_x(self):
         return self.rect.x
@@ -199,22 +316,27 @@ class Monster(pg.sprite.Sprite):
     def __init__(self, game, x, y):
         pg.sprite.Sprite.__init__(self)
         self.game = game
-        # Use the generated medieval monster sprite if available
-        try:
-            self.image = monster_medieval
-        except NameError:
-            self.image = monster
+        # Use the generated scary monster sprite
+        self.image = monster_scary
         self._layer = monster_layer
         self.rect = self.image.get_rect()
         self.rect.x = x
         self.rect.y = y
-        self.vx = 5
-        self.health = 50  # Boss has 50 HP
-        self.max_health = 50
+        # Boss flies around the entire map - both horizontal and vertical
+        self.vx = random.choice([-6, -4, 4, 6])  # Faster horizontal movement
+        self.vy = random.choice([-3, -2, 2, 3])  # Add vertical movement
+        self.health = 60  # Increased from 50 to 60 HP
+        self.max_health = 60
         # Create a smaller hitbox for player damage (just the moving box part)
         # The monster image is 128x128, the actual moving box is roughly in the middle
         self.damage_hitbox = pg.Rect(0, 0, 60, 60)  # Smaller hitbox for the box
         self.update_hitbox()
+        # Frozen state from freeze powerup
+        self.frozen = False
+        self.frozen_time = 0
+        # Shooting behavior
+        self.shoot_timer = 0
+        self.shoot_pattern = 0  # Cycle through different shooting patterns
     
     def update_hitbox(self):
         """Update the damage hitbox position to follow the monster"""
@@ -223,17 +345,53 @@ class Monster(pg.sprite.Sprite):
         self.damage_hitbox.centery = self.rect.centery
 
     def update(self):
+        # Update frozen timer
+        if self.frozen:
+            self.frozen_time -= 1
+            if self.frozen_time <= 0:
+                self.frozen = False
+        
+        # Skip movement if frozen
+        if self.frozen:
+            return
+        
+        # Boss flies around the entire map
         self.rect.x += self.vx
+        self.rect.y += self.vy
+        
+        # Bounce off walls (horizontal)
         if self.rect.x >= WIDTH - 128:
-            self.vx = -self.vx
-        if self.rect.x == 0:
-            self.vx = -self.vx
+            self.vx = -abs(self.vx)
+        elif self.rect.x <= 0:
+            self.vx = abs(self.vx)
+        
+        # Bounce off ceiling and floor (vertical)
+        if self.rect.y <= 50:  # Don't go too far up (below UI panel)
+            self.vy = abs(self.vy)
+        elif self.rect.y >= HEIGHT - 128:
+            self.vy = -abs(self.vy)
+        
+        # Occasionally change direction for unpredictable movement
+        if random.random() < 0.02:
+            self.vx = random.choice([-6, -4, 4, 6])
+        if random.random() < 0.02:
+            self.vy = random.choice([-3, -2, 2, 3])
+        
         self.update_hitbox()  # Keep hitbox in sync
     
     def take_damage(self, damage=1):
         """Damage the monster boss"""
         self.health -= damage
         if self.health <= 0:
+            # Boss always drops powerup on death (2x drops)
+            for _ in range(2):
+                powerup_type = random.choice(Powerup.TYPES)
+                powerup = Powerup(self.game, self.rect.centerx + random.randint(-30, 30), 
+                                self.rect.centery, powerup_type)
+                self.game.all_sprites.add(powerup)
+                self.game.powerups.add(powerup)
+                powerup_arr.append(powerup)
+            
             death_sound_HIT.play()
             self.kill()
             if self in monster_arr:
@@ -603,36 +761,58 @@ class Heart(pg.sprite.Sprite):
         # Check for player collision
         if len(player_arr) > 0:
             if abs(self.rect.x - player_arr[0].rect.x) < 15 and abs(self.rect.y - player_arr[0].rect.y) < 25:
-                # Heal player (cap at 100)
-                player_arr[0].hearts = min(player_arr[0].hearts + self.heal_amount, 100)
+                # Heal player (cap at player's max_hearts, which may be upgraded)
+                player_max = getattr(player_arr[0], 'max_hearts', 100)
+                player_arr[0].hearts = min(player_arr[0].hearts + self.heal_amount, player_max)
                 coin_sound.play()  # Reuse coin sound for pickup
                 self.kill()
 
 
 class MonsterBullet(pg.sprite.Sprite):
-    def __init__(self):
+    def __init__(self, target_pos=None):
         pg.sprite.Sprite.__init__(self)
         self._layer = projectile_layer
         self.image = lava_ball
         self.rect = self.image.get_rect()
         self.pos = vec(WIDTH / 2, HEIGHT / 2)
+        
+        # Get bullet starting position from boss
         y_pos = 125
-        # Safety check to avoid crashes when monster_arr is empty
         if len(monster_arr) > 0:
-            x_pos = monster_arr[0].rect.x
+            x_pos = monster_arr[0].rect.centerx
+            y_pos = monster_arr[0].rect.centery
         else:
-            x_pos = WIDTH / 2  # Default position if no monster exists
+            x_pos = WIDTH / 2
+        
         self.rect.y = y_pos
         self.rect.x = x_pos
-        self.speedx = random.randrange(-10, 10)
-        self.speedy = random.randrange(5, 15)
+        
+        # If target position provided, aim at it; otherwise use random pattern
+        if target_pos:
+            dx = target_pos[0] - x_pos
+            dy = target_pos[1] - y_pos
+            distance = (dx**2 + dy**2)**0.5
+            if distance > 0:
+                # Normalize and scale to speed
+                speed = 8  # Faster bullets
+                self.speedx = (dx / distance) * speed
+                self.speedy = (dy / distance) * speed
+            else:
+                self.speedx = random.randrange(-10, 10)
+                self.speedy = random.randrange(5, 15)
+        else:
+            # Random spread pattern
+            self.speedx = random.randrange(-12, 12)  # Faster
+            self.speedy = random.randrange(6, 16)  # Faster
 
     def update(self):
         self.rect.y += self.speedy
-        self.rect.x -= self.speedx
-        if self.rect.y > HEIGHT - 60:
+        self.rect.x += self.speedx  # Fixed: was subtracting, now adding
+        
+        # Kill bullets that go off screen
+        if self.rect.y > HEIGHT or self.rect.y < 0:
             self.kill()
-        if self.rect.x < 0 | self.rect.x > WIDTH:
+        if self.rect.x < 0 or self.rect.x > WIDTH:
             self.kill()
 
 
@@ -660,7 +840,18 @@ class Goblin(pg.sprite.Sprite):
         self.attacking = False
         self.attack_timer = 0
         self.attack_cooldown = 0
-        self.attack_range = 40  # How close goblin needs to be to attack
+        self.attack_range = 25  # How close goblin needs to be to stab
+        self.attack_type = 'none'  # 'none', 'stab'
+        # Walking animation
+        self.walk_frame = 0
+        self.walk_timer = 0
+        
+        # Stuck detection - if goblin bounces back and forth in same spot
+        self.stuck_counter = 0
+        self.last_x = 0
+        # Frozen state from freeze powerup
+        self.frozen = False
+        self.frozen_time = 0
         
         # Goblin is 20px wide and 30px tall
         # Spread goblins across platforms, but avoid player spawn platform (center of screen)
@@ -696,8 +887,19 @@ class Goblin(pg.sprite.Sprite):
         self.current_platform = i
         self.rect.y = y_pos
         self.rect.x = x_pos
+        self.last_x = x_pos
 
     def update(self):
+        # Update frozen timer
+        if self.frozen:
+            self.frozen_time -= 1
+            if self.frozen_time <= 0:
+                self.frozen = False
+        
+        # Skip movement if frozen
+        if self.frozen:
+            return
+        
         # Apply gravity
         self.vy += 0.8
         self.rect.y += self.vy
@@ -726,29 +928,155 @@ class Goblin(pg.sprite.Sprite):
                 return  # Exit update to prevent further processing
         
         # Look ahead before moving to avoid falling into lava
-        test_rect = self.rect.copy()
-        test_rect.x += self.vx * 3  # Look 3 pixels ahead
-        test_rect.y += 40  # Check below
-        
+        # Check what's directly below and to the sides for lava
         will_fall_into_lava = False
         will_fall_off_platform = True
+        lava_on_left = False
+        lava_on_right = False
         
-        # Check if there's lava ahead and below
+        # Check directly below for lava
+        below_check = self.rect.copy()
+        below_check.y += 35  # Check just below current position
         for lava in self.game.lava:
-            if test_rect.colliderect(lava.rect):
+            if below_check.colliderect(lava.rect):
                 will_fall_into_lava = True
         
-        # Check if there's a platform ahead
+        # Check ahead in movement direction for lava
+        if self.vx != 0:
+            ahead_check = self.rect.copy()
+            ahead_check.x += self.vx * 8  # Look 8 pixels in direction of movement
+            ahead_check.y += 35  # Check below as well
+            for lava in self.game.lava:
+                if ahead_check.colliderect(lava.rect):
+                    will_fall_into_lava = True
+        
+        # Check sides for lava nearby
+        left_check = self.rect.copy()
+        left_check.x -= 50
+        left_check.y += 10
+        for lava in self.game.lava:
+            if left_check.colliderect(lava.rect):
+                lava_on_left = True
+        
+        right_check = self.rect.copy()
+        right_check.x += 50
+        right_check.y += 10
+        for lava in self.game.lava:
+            if right_check.colliderect(lava.rect):
+                lava_on_right = True
+        
+        # Check if there's a platform ahead in movement direction
+        test_rect = self.rect.copy()
+        if self.vx != 0:
+            test_rect.x += self.vx * 8
+        test_rect.y += 50  # Check further below
         for platform in self.game.platforms:
             if test_rect.colliderect(platform.rect):
                 will_fall_off_platform = False
+                break
         
-        # Turn around if would fall into lava or off platform edge
-        if self.on_ground and (will_fall_into_lava or will_fall_off_platform):
+        # Detect stuck situation - if goblin hasn't moved much in last 30 frames
+        if abs(self.rect.x - self.last_x) < 2:
+            self.stuck_counter += 1
+        else:
+            self.stuck_counter = 0
+        self.last_x = self.rect.x
+        
+        # GOBLIN AI: Intelligent chase and platform navigation
+        if len(player_arr) > 0:
+            player = player_arr[0]
+            player_x = player.rect.centerx
+            player_y = player.rect.centery
+            goblin_x = self.rect.centerx
+            goblin_y = self.rect.centery
+            
+            horizontal_dist = abs(player_x - goblin_x)
+            vertical_dist = abs(player_y - goblin_y)
+            
+            # Determine direction toward player
+            if player_x < goblin_x - 5:
+                desired_direction = -1  # Move left
+            elif player_x > goblin_x + 5:
+                desired_direction = 1  # Move right
+            else:
+                desired_direction = 0  # Same horizontal position
+            
+            # LAVA AVOIDANCE - Override desired direction if lava is detected ahead
+            # But don't freeze - always try to move in some direction
+            if will_fall_into_lava:
+                # Lava is ahead in current direction - reverse it only if we were moving
+                if desired_direction != 0:
+                    desired_direction = -desired_direction
+                else:
+                    # If we weren't moving toward them, pick a safe direction
+                    desired_direction = 1 if not lava_on_right else -1
+            elif desired_direction == -1 and lava_on_left:
+                # Want to go left but lava is on left side - go right instead
+                desired_direction = 1
+            elif desired_direction == 1 and lava_on_right:
+                # Want to go right but lava is on right side - go left instead
+                desired_direction = -1
+            
+            # Apply movement with speed
+            speed_mult = 1.3 if self.is_elite else 1.0
+            if desired_direction == -1:
+                self.vx = -4 * speed_mult
+            elif desired_direction == 1:
+                self.vx = 4 * speed_mult
+            else:
+                self.vx = 0
+            
+            # Smart jumping: Jump more aggressively if player is above or unreachable
+            # BUT avoid jumping into lava
+            if self.on_ground and self.jump_cooldown == 0 and not will_fall_into_lava:
+                # Jump if player is significantly above
+                if player_y < goblin_y - 40 and horizontal_dist < 150:
+                    if random.random() < 0.5:  # 50% chance to jump up
+                        self.vy = random.randrange(-15, -11)
+                        self.jump_cooldown = 30
+                # Jump if there's a platform below to reach player on lower level (not into lava)
+                elif player_y > goblin_y + 80 and horizontal_dist < 200:
+                    if random.random() < 0.3:  # 30% chance to jump down
+                        self.vy = random.randrange(-12, -8)
+                        self.jump_cooldown = 30
+                # Jump to avoid falling off edges while chasing (but not into lava)
+                elif will_fall_off_platform and self.stuck_counter > 15:
+                    self.vy = random.randrange(-13, -10)
+                    self.jump_cooldown = 35
+        else:
+            # No player - slow wandering
+            if random.random() < 0.005:
+                self.vx = -self.vx
+        
+        # FINAL SAFETY CHECK: Don't move if we would land in lava
+        # Test the position we would move to
+        test_move_rect = self.rect.copy()
+        test_move_rect.x += self.vx
+        test_move_rect.y += 10  # Check at slightly lower position to catch lava
+        
+        landing_in_lava = False
+        for lava in self.game.lava:
+            if test_move_rect.colliderect(lava.rect):
+                landing_in_lava = True
+                break
+        
+        # If this movement would land us in lava, reverse direction
+        if landing_in_lava:
             self.vx = -self.vx
         
         # Movement
         self.rect.x += self.vx
+        
+        # Prevent goblin-goblin collisions - check for other goblins after moving
+        for goblin in goblins_arr:
+            if goblin is not self and self.rect.colliderect(goblin.rect):
+                # Reverse both goblins' directions to separate them
+                self.vx = -self.vx
+                goblin.vx = -goblin.vx
+                # Move both goblins back slightly to prevent overlap
+                self.rect.x -= self.vx * 2
+                goblin.rect.x -= goblin.vx * 2
+                break  # Only handle one collision per frame
         
         # Attack system - goblins must attack to damage player
         if self.attack_timer > 0:
@@ -798,8 +1126,10 @@ class Goblin(pg.sprite.Sprite):
                 self.vy = random.randrange(-12, -8)
                 self.jump_cooldown = 50
         
-        # Reverse direction at edges or randomly
-        if random.random() < 0.01:  # 1% chance to randomly turn
+        # More aggressive movement - goblins should be constantly moving
+        # Only turn if stuck or detected fall/lava - not randomly turning
+        # Random turns now reduced to 0.002 (very rare)
+        if random.random() < 0.002:  # Very rare random turn
             self.vx = -self.vx
         
         # Wrap around screen edges
@@ -808,11 +1138,50 @@ class Goblin(pg.sprite.Sprite):
         if self.rect.x > WIDTH:
             self.rect.x = 0
         
-        # Update sprite direction
-        if self.vx < 0:
-            self.image = gleft
-        if self.vx > 0:
-            self.image = gright
+        # Display attack animation if attacking
+        if self.attacking:
+            # Show stab animation during attack
+            attack_progress = (self.attack_timer - 1) // 8  # 15 frames / 2 frames = ~7-8 frames per pose
+            if attack_progress >= 1:
+                attack_progress = 1
+            if self.vx < 0:
+                try:
+                    self.image = pg.image.load(f'images/enemies/goblin_stab_{attack_progress}.png')
+                except:
+                    self.image = gleft
+            else:
+                try:
+                    self.image = pg.image.load(f'images/enemies/goblin_stab_{attack_progress}.png')
+                except:
+                    self.image = gright
+        # Update sprite direction with walking animation
+        elif self.vx < 0:
+            # Walking left - animate
+            self.walk_timer += 1
+            if self.walk_timer >= 10:  # Change frame every 10 ticks
+                self.walk_timer = 0
+                self.walk_frame = 1 - self.walk_frame
+            # Use walk animation if moving, else use idle
+            if self.walk_frame == 1:
+                try:
+                    self.image = pg.image.load('images/enemies/goblin_walk_1.png')
+                except:
+                    self.image = gleft
+            else:
+                self.image = gleft
+        elif self.vx > 0:
+            # Walking right - animate
+            self.walk_timer += 1
+            if self.walk_timer >= 10:
+                self.walk_timer = 0
+                self.walk_frame = 1 - self.walk_frame
+            if self.walk_frame == 1:
+                try:
+                    self.image = pg.image.load('images/enemies/goblin_walk_1.png')
+                except:
+                    self.image = gright
+            else:
+                self.image = gright
         
         # Apply golden tint for elite enemies
         if self.is_elite and not hasattr(self, '_tinted'):
@@ -832,6 +1201,15 @@ class Goblin(pg.sprite.Sprite):
         """Damage the goblin"""
         self.health -= damage
         if self.health <= 0:
+            # Chance to drop powerup on death (higher for elite)
+            drop_chance = 0.15 if self.is_elite else 0.08
+            if random.random() < drop_chance:
+                powerup_type = random.choice(Powerup.TYPES)
+                powerup = Powerup(self.game, self.rect.centerx, self.rect.centery, powerup_type)
+                self.game.all_sprites.add(powerup)
+                self.game.powerups.add(powerup)
+                powerup_arr.append(powerup)
+            
             # Play goblin-specific death sound if available
             try:
                 snd = globals().get('goblin_death_sound', None)
@@ -875,7 +1253,12 @@ class Skeleton(pg.sprite.Sprite):
         self.health = 6 if is_elite else 3  # Elite skeletons take 6 hits
         self.max_health = self.health
         # Increase base cooldown to reduce firing frequency
-        self.shoot_timer = random.randint(90, 180)  # frames until next possible shot
+        self.shoot_timer = random.randint(40, 90)  # frames until next possible shot - increased fire rate
+        # Walking and shooting animation
+        self.walk_frame = 0
+        self.walk_timer = 0
+        self.shooting = False
+        self.shoot_frame = 0
         # Skeleton is 20px wide and 30px tall
         # Find a platform, but avoid player spawn platform (center of screen)
         available_platforms = []
@@ -917,8 +1300,27 @@ class Skeleton(pg.sprite.Sprite):
         self.spawn_platform = platform_arr[i]
         self.rect.y = y_pos
         self.rect.x = x_pos
+        # Frozen state from freeze powerup
+        self.frozen = False
+        self.frozen_time = 0
+
+    def get_attack_rect(self):
+        """Return attack hitbox only when actively shooting. Otherwise return None."""
+        if self.shooting:
+            return self.rect
+        return None
 
     def update(self):
+        # Update frozen timer
+        if self.frozen:
+            self.frozen_time -= 1
+            if self.frozen_time <= 0:
+                self.frozen = False
+        
+        # Skip movement if frozen
+        if self.frozen:
+            return
+        
         # Apply gravity
         self.vy += 0.8
         self.rect.y += self.vy
@@ -944,17 +1346,124 @@ class Skeleton(pg.sprite.Sprite):
                     skel_arr.remove(self)
                 return  # Exit update to prevent further processing
         
-        # Smart AI: Follow the player and move around
+        # Smart AI: SKELETON RANGED BEHAVIOR - Position for clear shots
         if len(player_arr) > 0:
             player = player_arr[0]
             player_x = player.rect.centerx
+            player_y = player.rect.centery
             skeleton_x = self.rect.centerx
+            skeleton_y = self.rect.centery
+            horizontal_dist = abs(player_x - skeleton_x)
+            vertical_dist = abs(player_y - skeleton_y)
             
-            # Determine desired direction toward player
-            if player_x > skeleton_x + 10:  # Player is to the right
-                self.vx = abs(self.vx)  # Move right
-            elif player_x < skeleton_x - 10:  # Player is to the left
-                self.vx = -abs(self.vx)  # Move left
+            # Check if skeleton has line of sight to player (no platforms blocking)
+            has_clear_shot = True
+            for platform in self.game.platforms:
+                platform_check = platform.collision_rect if hasattr(platform, 'collision_rect') else platform.rect
+                # Simple line of sight check - if platform is between skeleton and player
+                if skeleton_x < player_x:
+                    if platform_check.left < player_x and platform_check.right > skeleton_x:
+                        if skeleton_y < platform_check.top < player_y or player_y < platform_check.top < skeleton_y:
+                            has_clear_shot = False
+                            break
+                else:
+                    if platform_check.right > player_x and platform_check.left < skeleton_x:
+                        if skeleton_y < platform_check.top < player_y or player_y < platform_check.top < skeleton_y:
+                            has_clear_shot = False
+                            break
+            
+            # Check if player is below skeleton (might want to drop down)
+            player_is_below = player_y > skeleton_y + 100
+            
+            # Positioning strategy based on shot availability and distance
+            if not has_clear_shot:
+                # No clear shot - move to get better position
+                if vertical_dist > 100:
+                    # Player is on different level - try to get closer vertically by moving
+                    if player_is_below and horizontal_dist < 250:
+                        # Player is below - move toward edge to drop down
+                        # Find current platform to determine edge direction
+                        on_platform = None
+                        for platform in self.game.platforms:
+                            platform_check = platform.collision_rect if hasattr(platform, 'collision_rect') else platform.rect
+                            if abs(self.rect.bottom - platform_check.top) < 5 and self.rect.centerx > platform_check.left and self.rect.centerx < platform_check.right:
+                                on_platform = platform_check
+                                break
+                        
+                        if on_platform:
+                            # Move toward the edge closest to player
+                            if player_x > skeleton_x:
+                                # Player is to the right - move right toward right edge
+                                if self.rect.right < on_platform.right - 10:
+                                    self.vx = abs(self.vx)  # Move right to edge
+                                else:
+                                    self.vx = abs(self.vx) * 0.3  # At edge, keep moving slowly to fall off
+                            else:
+                                # Player is to the left - move left toward left edge
+                                if self.rect.left > on_platform.left + 10:
+                                    self.vx = -abs(self.vx)  # Move left to edge
+                                else:
+                                    self.vx = -abs(self.vx) * 0.3  # At edge, keep moving slowly to fall off
+                        else:
+                            # No platform detected, move toward player
+                            if player_x > skeleton_x:
+                                self.vx = abs(self.vx)
+                            else:
+                                self.vx = -abs(self.vx)
+                    elif horizontal_dist > 200:
+                        # Move toward player to get on same platform or closer
+                        if player_x > skeleton_x:
+                            self.vx = abs(self.vx)  # Move right toward player
+                        else:
+                            self.vx = -abs(self.vx)  # Move left toward player
+                    else:
+                        # Close enough horizontally - prepare to jump or hold position
+                        self.vx = 0
+                else:
+                    # Similar height but blocked - move to get angle
+                    if player_x > skeleton_x:
+                        self.vx = abs(self.vx)  # Move right
+                    else:
+                        self.vx = -abs(self.vx)  # Move left
+            elif horizontal_dist < 120:
+                # Has shot but too close - back away for safety
+                if player_x > skeleton_x:
+                    self.vx = -abs(self.vx)  # Move left away from player
+                else:
+                    self.vx = abs(self.vx)  # Move right away from player
+            elif horizontal_dist > 400:
+                # Too far even with clear shot - move closer for better accuracy
+                if player_x > skeleton_x:
+                    self.vx = abs(self.vx)  # Move right toward player
+                else:
+                    self.vx = -abs(self.vx)  # Move left toward player
+            elif vertical_dist > 120 and not player_is_below:
+                # Player is higher - move to edge to prepare for jump
+                if player_x > skeleton_x:
+                    self.vx = abs(self.vx) * 0.5  # Move slowly toward player
+                else:
+                    self.vx = -abs(self.vx) * 0.5
+            elif vertical_dist > 120 and player_is_below:
+                # Player is lower - similar to no clear shot, move to edge
+                on_platform = None
+                for platform in self.game.platforms:
+                    platform_check = platform.collision_rect if hasattr(platform, 'collision_rect') else platform.rect
+                    if abs(self.rect.bottom - platform_check.top) < 5 and self.rect.centerx > platform_check.left and self.rect.centerx < platform_check.right:
+                        on_platform = platform_check
+                        break
+                
+                if on_platform:
+                    if player_x > skeleton_x and self.rect.right < on_platform.right - 10:
+                        self.vx = abs(self.vx) * 0.7  # Move toward right edge
+                    elif player_x < skeleton_x and self.rect.left > on_platform.left + 10:
+                        self.vx = -abs(self.vx) * 0.7  # Move toward left edge
+                    else:
+                        self.vx = 0  # At edge
+                else:
+                    self.vx = 0
+            else:
+                # Perfect position - clear shot, good range, similar height
+                self.vx = 0
         
         # Move horizontally
         self.rect.x += self.vx
@@ -998,27 +1507,127 @@ class Skeleton(pg.sprite.Sprite):
                 near_lava = True
                 break
         
-        # Intelligent jumping to reach player on different platforms
+        # Intelligent jumping to reach player on different platforms or get clear shots
         if self.on_ground and not near_lava and self.jump_cooldown == 0 and len(player_arr) > 0:
             player = player_arr[0]
             vertical_dist = abs(self.rect.centery - player.rect.centery)
             horizontal_dist = abs(self.rect.centerx - player.rect.centerx)
             
-            # Jump if player is on different platform and within range
-            if vertical_dist > 50 and horizontal_dist < 300:
-                # Much higher chance to jump when player is on different platform
-                if random.random() < 0.15:  # 15% chance per frame
-                    self.vy = random.randrange(-15, -11)  # Stronger, more varied jump
-                    self.jump_cooldown = 35  # Shorter cooldown for aggressive pursuit
-            elif horizontal_dist < 150 and random.random() < 0.08:  # Jump toward nearby player
-                self.vy = random.randrange(-13, -10)
-                self.jump_cooldown = 40
+            # Check if skeleton has clear shot (from earlier calculation)
+            has_clear_shot = True
+            blocking_platform = None
+            for platform in self.game.platforms:
+                platform_check = platform.collision_rect if hasattr(platform, 'collision_rect') else platform.rect
+                if self.rect.centerx < player.rect.centerx:
+                    if platform_check.left < player.rect.centerx and platform_check.right > self.rect.centerx:
+                        if self.rect.centery < platform_check.top < player.rect.centery or player.rect.centery < platform_check.top < self.rect.centery:
+                            has_clear_shot = False
+                            blocking_platform = platform_check
+                            break
+                else:
+                    if platform_check.right > player.rect.centerx and platform_check.left < self.rect.centerx:
+                        if self.rect.centery < platform_check.top < player.rect.centery or player.rect.centery < platform_check.top < self.rect.centery:
+                            has_clear_shot = False
+                            blocking_platform = platform_check
+                            break
+            
+            # Find platforms above and below current position for strategic movement
+            platforms_above = []
+            platforms_below = []
+            current_platform_y = self.rect.bottom
+            
+            for platform in self.game.platforms:
+                platform_check = platform.collision_rect if hasattr(platform, 'collision_rect') else platform.rect
+                # Check if platform is horizontally reachable
+                if abs(platform_check.centerx - self.rect.centerx) < 200:
+                    if platform_check.top < current_platform_y - 50:  # Platform above
+                        jump_distance = current_platform_y - platform_check.top
+                        if jump_distance < 200:  # Reachable with jump
+                            platforms_above.append((platform_check, jump_distance))
+                    elif platform_check.top > current_platform_y + 50:  # Platform below
+                        platforms_below.append((platform_check, platform_check.top - current_platform_y))
+            
+            # Decide whether to jump to a different platform for better positioning
+            should_change_platform = False
+            target_is_above = player.rect.centery < self.rect.centery
+            
+            if not has_clear_shot and blocking_platform:
+                # Shot is blocked - try to get above or below the blocking platform
+                if player.rect.centery < blocking_platform.top and self.rect.centery > blocking_platform.top:
+                    # Player is above blocking platform, skeleton is below - need to jump up
+                    if platforms_above and random.random() < 0.25:
+                        should_change_platform = True
+                        # Jump to reach higher platform
+                        closest_above = min(platforms_above, key=lambda x: x[1])
+                        jump_strength = min(-12, -10 - closest_above[1] // 30)
+                        self.vy = jump_strength
+                        self.jump_cooldown = 25
+                elif player.rect.centery > blocking_platform.bottom and self.rect.centery < blocking_platform.bottom:
+                    # Player is below blocking platform, skeleton is above - walk off edge to drop down
+                    if platforms_below and random.random() < 0.2:
+                        should_change_platform = True
+                        # Move toward edge to drop down (handled by movement logic)
+            
+            if not should_change_platform:
+                # Standard jumping logic
+                # Jump if no clear shot and player is on different level
+                if not has_clear_shot and vertical_dist > 80 and horizontal_dist < 350:
+                    # Jump to get better position
+                    if random.random() < 0.2:  # 20% chance per frame when blocked
+                        self.vy = random.randrange(-15, -11)
+                        self.jump_cooldown = 30
+                # Jump UP to higher platform if player is significantly higher
+                elif target_is_above and vertical_dist > 100 and horizontal_dist < 300:
+                    if platforms_above and random.random() < 0.22:
+                        # Calculate jump needed to reach platform above
+                        closest_above = min(platforms_above, key=lambda x: x[1])
+                        jump_strength = min(-12, -10 - closest_above[1] // 30)
+                        self.vy = jump_strength
+                        self.jump_cooldown = 30
+                # Move to edge to DROP DOWN to lower platform if player is lower
+                elif not target_is_above and vertical_dist > 100 and horizontal_dist < 300:
+                    if platforms_below and random.random() < 0.18:
+                        # Just walk off the edge (gravity will handle the drop)
+                        # Movement logic will push skeleton toward edge
+                        pass
+                # Jump if player is significantly higher and within shooting range
+                elif player.rect.centery < self.rect.centery - 80 and horizontal_dist < 300:
+                    if random.random() < 0.18:  # 18% chance to jump up toward player
+                        self.vy = random.randrange(-16, -12)  # Strong jump upward
+                        self.jump_cooldown = 35
+                # Jump if too close to player (escape)
+                elif horizontal_dist < 100 and random.random() < 0.12:
+                    self.vy = random.randrange(-13, -10)
+                    self.jump_cooldown = 40
         
-        # Update sprite direction
-        if self.vx < 0:
-            self.image = sleft
-        if self.vx > 0:
-            self.image = sright
+        # Update sprite direction with walking animation (unless shooting)
+        if not self.shooting:
+            if self.vx < 0:
+                # Walking left - animate
+                self.walk_timer += 1
+                if self.walk_timer >= 10:
+                    self.walk_timer = 0
+                    self.walk_frame = 1 - self.walk_frame
+                if self.walk_frame == 1:
+                    try:
+                        self.image = pg.image.load('images/enemies/skeleton_walk_0.png')
+                    except:
+                        self.image = sleft
+                else:
+                    self.image = sleft
+            elif self.vx > 0:
+                # Walking right - animate
+                self.walk_timer += 1
+                if self.walk_timer >= 10:
+                    self.walk_timer = 0
+                    self.walk_frame = 1 - self.walk_frame
+                if self.walk_frame == 1:
+                    try:
+                        self.image = pg.image.load('images/enemies/skeleton_walk_1.png')
+                    except:
+                        self.image = sright
+                else:
+                    self.image = sright
         
         # Shooting: fire arrows toward the player when in range
         if len(player_arr) > 0:
@@ -1029,6 +1638,10 @@ class Skeleton(pg.sprite.Sprite):
             vert_dist = abs(dy)
             # Only shoot if player is within a reasonable range and cooldown elapsed
             if self.shoot_timer <= 0 and horiz_dist < 450 and vert_dist < 200:
+                # Show shooting animation
+                self.shooting = True
+                self.shoot_frame = 0
+                
                 arrow = Arrow(self.game, (self.rect.centerx, self.rect.centery), (player.rect.centerx, player.rect.centery))
                 self.game.all_sprites.add(arrow)
                 # Ensure skeleton_arrows group exists on game
@@ -1038,7 +1651,24 @@ class Skeleton(pg.sprite.Sprite):
                     self.game.skeleton_arrows = pg.sprite.Group()
                     self.game.skeleton_arrows.add(arrow)
                 # Small random delay until next shot (balanced)
-                self.shoot_timer = random.randint(90, 180)
+                self.shoot_timer = random.randint(40, 90)  # Increased fire rate
+            
+            # Update shooting animation
+            if self.shooting:
+                self.shoot_frame += 1
+                if self.shoot_frame >= 5:  # 5 frame shooting animation
+                    self.shooting = False
+                else:
+                    # Show different shoot frames during animation (0-4)
+                    # Cycle through available frames for smooth animation
+                    frame_index = min(self.shoot_frame, 1)  # Use frames 0 and 1
+                    try:
+                        if self.vx < 0:
+                            self.image = pg.image.load(f'images/enemies/skeleton_shoot_0.png')
+                        else:
+                            self.image = pg.image.load(f'images/enemies/skeleton_shoot_1.png')
+                    except:
+                        pass  # Fall back to walk/idle animation
 
         # Decrease shoot timer
         if self.shoot_timer > 0:
@@ -1048,6 +1678,15 @@ class Skeleton(pg.sprite.Sprite):
         """Damage the skeleton"""
         self.health -= damage
         if self.health <= 0:
+            # Chance to drop powerup on death (higher for elite)
+            drop_chance = 0.15 if self.is_elite else 0.08
+            if random.random() < drop_chance:
+                powerup_type = random.choice(Powerup.TYPES)
+                powerup = Powerup(self.game, self.rect.centerx, self.rect.centery, powerup_type)
+                self.game.all_sprites.add(powerup)
+                self.game.powerups.add(powerup)
+                powerup_arr.append(powerup)
+            
             # Play skeleton-specific death sound if available
             try:
                 snd = globals().get('skeleton_death_sound', None)
@@ -1058,6 +1697,131 @@ class Skeleton(pg.sprite.Sprite):
             self.kill()
             if self in skel_arr:
                 skel_arr.remove(self)
+
+
+class Particle(pg.sprite.Sprite):
+    """Visual particle effect for damage hits and attacks"""
+    def __init__(self, game, x, y, vx, vy, color, lifetime=30, size=8):
+        pg.sprite.Sprite.__init__(self)
+        self.game = game
+        self._layer = particle_layer
+        self.x = float(x)
+        self.y = float(y)
+        self.vx = vx
+        self.vy = vy
+        self.color = color
+        self.lifetime = lifetime
+        self.max_lifetime = lifetime
+        self.size = size
+        self.image = pg.Surface((size, size))
+        self.image.fill(color)
+        self.rect = self.image.get_rect()
+        self.rect.center = (x, y)
+    
+    def update(self):
+        """Update particle position and lifetime"""
+        self.x += self.vx
+        self.y += self.vy
+        self.vy += 0.2  # Gravity effect
+        self.lifetime -= 1
+        
+        # Fade out
+        alpha = int(255 * (self.lifetime / self.max_lifetime))
+        self.image = pg.Surface((self.size, self.size), pg.SRCALPHA)
+        color_with_alpha = (*self.color, alpha)
+        pg.draw.circle(self.image, color_with_alpha, (self.size // 2, self.size // 2), self.size // 2)
+        
+        self.rect.center = (int(self.x), int(self.y))
+        
+        if self.lifetime <= 0:
+            self.kill()
+
+
+class Powerup(pg.sprite.Sprite):
+    """Powerup item that floats down and gives temporary bonuses"""
+    TYPES = ['shield', 'damage', 'speed', 'freeze']
+    COLORS = {
+        'shield': (100, 150, 255),   # Blue
+        'damage': (255, 50, 50),      # Red
+        'speed': (255, 200, 0),       # Orange
+        'freeze': (150, 255, 255)     # Cyan
+    }
+    
+    def __init__(self, game, x, y, powerup_type='shield'):
+        pg.sprite.Sprite.__init__(self)
+        self.game = game
+        self._layer = powerup_layer
+        
+        if powerup_type not in self.TYPES:
+            powerup_type = random.choice(self.TYPES)
+        
+        self.type = powerup_type
+        self.size = 40
+        self.color = self.COLORS[powerup_type]
+        
+        # Load powerup image or create fallback
+        try:
+            image_path = f'images/powerup_{powerup_type}.png'
+            if path.exists(image_path):
+                self.image = pg.image.load(image_path)
+            else:
+                # Fallback: create colored circle
+                self.image = pg.Surface((self.size, self.size), pg.SRCALPHA)
+                pg.draw.circle(self.image, self.color, (self.size // 2, self.size // 2), self.size // 2)
+                pg.draw.circle(self.image, WHITE, (self.size // 2, self.size // 2), self.size // 3)
+        except Exception:
+            # Fallback if loading fails
+            self.image = pg.Surface((self.size, self.size), pg.SRCALPHA)
+            pg.draw.circle(self.image, self.color, (self.size // 2, self.size // 2), self.size // 2)
+            pg.draw.circle(self.image, WHITE, (self.size // 2, self.size // 2), self.size // 3)
+        
+        self.rect = self.image.get_rect()
+        self.rect.x = x
+        self.rect.y = y
+        self.vy = 2  # Fall speed
+        self.rotation = 0
+        self.lifetime = 600  # 20 seconds at 30 FPS
+    
+    def update(self):
+        """Update powerup position and animation"""
+        self.rect.y += self.vy
+        self.rotation += 5
+        
+        # Remove if fallen off screen or expired
+        if self.rect.y > HEIGHT or self.lifetime <= 0:
+            self.kill()
+            if self in powerup_arr:
+                powerup_arr.remove(self)
+        
+        self.lifetime -= 1
+    
+    def apply(self, player):
+        """Apply powerup effect to player"""
+        if self.type == 'shield':
+            player.shield_active = True
+            player.shield_time = 300  # 10 seconds
+        elif self.type == 'damage':
+            player.damage_boost_active = True
+            player.damage_boost_time = 300
+            player.damage_boost_mult = 1.5
+        elif self.type == 'speed':
+            player.speed_boost_active = True
+            player.speed_boost_time = 300
+            player.speed_mult_boost = 1.5
+        elif self.type == 'freeze':
+            # Freeze all enemies for 5 seconds
+            for enemy_group in [self.game.goblins, self.game.skeletons, self.game.monster]:
+                for enemy in enemy_group:
+                    enemy.frozen = True
+                    enemy.frozen_time = 150  # 5 seconds
+        
+        self.kill()
+        if self in powerup_arr:
+            powerup_arr.remove(self)
+
+
+# Global powerup array
+powerup_arr = []
 
 
 
