@@ -19,6 +19,8 @@ FPS = 30
 FONT_NAME = 'courier new'
 hs_file = "highscore.txt"
 
+# Player sprite scaling
+PLAYER_SCALE = 1
 
 # Utility loaders with safe fallbacks
 def safe_load_image(pth, fallback_size=(64, 64)):
@@ -32,6 +34,62 @@ def safe_load_image(pth, fallback_size=(64, 64)):
         surf = pg.Surface(fallback_size)
         surf.fill((100, 100, 100))
         return surf
+# Knight sprite sheet support
+def load_knight_sprite_sheet(pth):
+    """Load and slice a knight sprite sheet if available.
+
+    Auto-detect frame size by assuming 4 rows (idle, walk, jump, attack)
+    and using per-row frame counts [4, 6, 2, 4]. Width is divided by
+    the max count to get frame width. This avoids hard-coding 40x50.
+    """
+    try:
+        sheet = pg.image.load(pth)
+        # Basic debug to help verify usage
+        print(f"Knight sheet loaded: {pth} ({sheet.get_width()}x{sheet.get_height()})")
+    except Exception as e:
+        print(f"Knight sheet not loaded: {pth} -> {e}")
+        return None
+    try:
+        sw, sh = sheet.get_width(), sheet.get_height()
+        row_counts = [4, 6, 2, 4]
+        rows = 4
+        fh = sh // rows
+        fw = sw // max(row_counts)
+        def grab(row, count):
+            frames = []
+            for i in range(count):
+                x = i * fw
+                y = row * fh
+                rect = pg.Rect(x, y, fw, fh)
+                surf = pg.Surface((fw, fh), pg.SRCALPHA)
+                surf.blit(sheet, (0,0), rect)
+                frames.append(surf)
+            return frames
+        frames = {
+            'idle_right': grab(0, row_counts[0]),
+            'walk_right': grab(1, row_counts[1]),
+            'jump_right': grab(2, row_counts[2]),
+            'attack_right': grab(3, row_counts[3]),
+        }
+        # Mirror for left
+        def mirror(arr):
+            return [pg.transform.flip(s, True, False) for s in arr]
+        frames['idle_left'] = mirror(frames['idle_right'])
+        frames['walk_left'] = mirror(frames['walk_right'])
+        frames['jump_left'] = mirror(frames['jump_right'])
+        frames['attack_left'] = mirror(frames['attack_right'])
+        
+        # Scale all frames by PLAYER_SCALE
+        if 'PLAYER_SCALE' in globals():
+            for key in frames:
+                frames[key] = [pg.transform.scale(f, (int(f.get_width() * PLAYER_SCALE), int(f.get_height() * PLAYER_SCALE))) for f in frames[key]]
+        
+        print(f"Knight frames sliced: idle={len(frames['idle_right'])}, walk={len(frames['walk_right'])}, jump={len(frames['jump_right'])}, attack={len(frames['attack_right'])}")
+        return frames
+    except Exception as e:
+        print(f"Knight sheet slicing failed: {e}")
+        return None
+
 
 
 class DummySound:
@@ -52,20 +110,30 @@ def safe_load_sound(pth):
         return DummySound()
 
 # IMAGES
-pleft = safe_load_image('images/player/player_left.png')
-pright = safe_load_image('images/player/player_right.png')
-pleftj = safe_load_image('images/player/player_jump_left.png')
-prightj = safe_load_image('images/player/player_jump_right.png')
-plefth = safe_load_image('images/player/player_hit_left.png')
-prighth = safe_load_image('images/player/player_hit_right.png')
+# Disable sprite sheet - using individual PNG images
+_knight_frames = None
+
+# Helper to scale player sprites
+def scale_player_sprite(img):
+    if img:
+        w, h = img.get_size()
+        return pg.transform.scale(img, (int(w * PLAYER_SCALE), int(h * PLAYER_SCALE)))
+    return img
+
+pleft = scale_player_sprite(safe_load_image('images/sprites/player/player_left.png'))
+pright = scale_player_sprite(safe_load_image('images/sprites/player/player_right.png'))
+pleftj = scale_player_sprite(safe_load_image('images/sprites/player/player_jump_left.png'))
+prightj = scale_player_sprite(safe_load_image('images/sprites/player/player_jump_right.png'))
+plefth = scale_player_sprite(safe_load_image('images/sprites/player/player_hit_left.png'))
+prighth = scale_player_sprite(safe_load_image('images/sprites/player/player_hit_right.png'))
 
 # Attack animation frames
-attack_normal_right = [safe_load_image(f'images/player/player_attack_normal_right_{i}.png') for i in range(3)]
-attack_normal_left = [safe_load_image(f'images/player/player_attack_normal_left_{i}.png') for i in range(3)]
-attack_critical_right = [safe_load_image(f'images/player/player_attack_critical_right_{i}.png') for i in range(3)]
-attack_critical_left = [safe_load_image(f'images/player/player_attack_critical_left_{i}.png') for i in range(3)]
-attack_heavy_right = [safe_load_image(f'images/player/player_attack_heavy_right_{i}.png') for i in range(4)]
-attack_heavy_left = [safe_load_image(f'images/player/player_attack_heavy_left_{i}.png') for i in range(4)]
+attack_normal_right = [scale_player_sprite(safe_load_image(f'images/sprites/player/player_attack_normal_right_{i}.png')) for i in range(3)]
+attack_normal_left = [scale_player_sprite(safe_load_image(f'images/sprites/player/player_attack_normal_left_{i}.png')) for i in range(3)]
+attack_critical_right = [scale_player_sprite(safe_load_image(f'images/sprites/player/player_attack_critical_right_{i}.png')) for i in range(3)]
+attack_critical_left = [scale_player_sprite(safe_load_image(f'images/sprites/player/player_attack_critical_left_{i}.png')) for i in range(3)]
+attack_heavy_right = [scale_player_sprite(safe_load_image(f'images/sprites/player/player_attack_heavy_right_{i}.png')) for i in range(4)]
+attack_heavy_left = [scale_player_sprite(safe_load_image(f'images/sprites/player/player_attack_heavy_left_{i}.png')) for i in range(4)]
 
 # IMAGES - end of game UI and sprites
 end_background = safe_load_image('images/backgrounds/game_over.png')
@@ -73,23 +141,23 @@ level_background = safe_load_image('images/backgrounds/level_complete.png')
 platform_image = safe_load_image('images/ui/platform.png')
 lava = safe_load_image('images/ui/lava.png')
 lava_ball = safe_load_image('images/ui/lava_ball.png')
-gleft = safe_load_image('images/enemies/Goblin2.png')
-gright = safe_load_image('images/enemies/Goblin.png')
-sleft = safe_load_image('images/enemies/skel_left.png')
-sright = safe_load_image('images/enemies/skel_right.png')
+gleft = safe_load_image('images/sprites/enemies/Goblin2.png')
+gright = safe_load_image('images/sprites/enemies/Goblin.png')
+sleft = safe_load_image('images/sprites/enemies/skel_left.png')
+sright = safe_load_image('images/sprites/enemies/skel_right.png')
 coin = safe_load_image('images/ui/coin.png')
 heart_image = safe_load_image('images/ui/heart.png')
 
 # Optional new generated sprites (fall back to defaults if missing)
 try:
-    monster_scary = pg.image.load('images/monsters/monster_scary.png')
+    monster_scary = pg.image.load('images/sprites/monsters/monster_scary.png')
 except Exception:
     # Fallback: create a simple red circle
     monster_scary = pg.Surface((128, 128), pg.SRCALPHA)
     pg.draw.circle(monster_scary, (200, 50, 50), (64, 64), 50)
 
 try:
-    arrow_skeleton = pg.image.load('images/enemies/arrow_skeleton.png')
+    arrow_skeleton = pg.image.load('images/sprites/enemies/arrow_skeleton.png')
 except Exception:
     # create a tiny surface fallback
     arrow_skeleton = pg.Surface((48, 12), pg.SRCALPHA)
@@ -203,18 +271,27 @@ def get_level_platforms(level):
     # Level-specific seeds for consistent but varied layouts
     random.seed(level * 1000 + level)
     
-    # Level 1: Special beginner-friendly layout
+    # Level 1-2: Beginner-friendly layouts (cover lava completely, safe)
     if level == 1:
-        # Layout tuned to match the provided screenshot (positions approximate for 800x600)
-        platform_arr.append([0, HEIGHT - 90, 260, 20, 2])            # ground left
-        platform_arr.append([300, HEIGHT - 90, 180, 20, 2])          # ground center
-        platform_arr.append([500, HEIGHT - 150, 260, 20, 2])         # low right pad
+        # Extra wide ground platforms to cover lava completely
+        platform_arr.append([0, HEIGHT - 90, WIDTH, 20, 2])          # full-width ground covering lava
         platform_arr.append([60, 320, 180, 20, 2])                   # mid-left
         platform_arr.append([120, 160, 150, 20, 2])                  # top-left
         platform_arr.append([320, 280, 170, 20, 2])                  # mid-center
         platform_arr.append([360, 360, 120, 20, 2])                  # lower-center
-        platform_arr.append([560, 300, 200, 20, 2])                  # mid-right (player start area)
-        platform_source = "level1_custom"
+        platform_arr.append([560, 300, 200, 20, 2])                  # mid-right
+        platform_source = "level1_safe"
+        return
+    
+    if level == 2:
+        # Level 2: Still mostly safe but with small gaps
+        platform_arr.append([0, HEIGHT - 90, 300, 20, 2])            # ground left (covers left lava)
+        platform_arr.append([350, HEIGHT - 90, 450, 20, 2])          # ground right (covers right lava)
+        platform_arr.append([60, 320, 180, 20, 2])                   # mid-left
+        platform_arr.append([320, 280, 170, 20, 2])                  # mid-center
+        platform_arr.append([560, 300, 200, 20, 2])                  # mid-right
+        platform_arr.append([200, 160, 150, 20, 2])                  # top
+        platform_source = "level2_safe"
         return
     
     # Choose a layout pattern based on level
@@ -231,9 +308,9 @@ def get_level_platforms(level):
         platform_source = "boss_pattern"
         return
         
-    # For non-boss levels, use pattern rotating through 10 designs
-    # level 2/12 -> pattern 1, level 3/13 -> pattern 2, etc.
-    pattern = (level - 1) % 10
+    # For non-boss levels 3+, use pattern rotating through 10 designs
+    # level 3/13 -> pattern 1, level 4/14 -> pattern 2, etc.
+    pattern = (level - 2) % 10
     
     if pattern == 0:
         # STAIRCASE LEFT - platforms ascending from left to right
