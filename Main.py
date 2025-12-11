@@ -1,6 +1,9 @@
 import pygame as pg
 import random
-from settings import *
+import settings
+from settings import WIDTH, HEIGHT, WINDOW_HEIGHT, FPS, FONT_NAME, hs_file, BLACK, WHITE, RED, GREEN, BLUE, YELLOW
+from settings import goblins_arr, coin_arr, skel_arr, player_arr, monster_arr, reset_plat_list, get_level_platforms
+from settings import PLAYER_ACC, PLAYER_FRICTION, PLAYER_GRAV, PLAYER_JUMP
 from sprites import *
 from os import path
 import os
@@ -107,8 +110,13 @@ class Game:
         self.time_bonus_active = True
         self.damage_taken_this_level = 0
         self.coin_count = 0
+        # Debug overlay for platform coordinates
+        self.debug_platform_lines = None
         # Flag used to ensure saved game is applied only once
         self.applied_saved_game = False
+        # Delay after level complete before showing next screen (in ticks)
+        self.level_complete_delay = 0
+        self.level_complete_delay_max = 0
         self.load_data()
 
     def load_data(self):
@@ -239,6 +247,35 @@ class Game:
         
         # Generate platforms for new level
         get_level_platforms(self.level)
+        # Debug: print platform count and source to console
+        try:
+            from settings import platform_arr, platform_source
+            print(f"Level {self.level}: {len(platform_arr)} platforms, source={platform_source}")
+        except Exception as e:
+            print(f"Level {self.level}: error getting platform info: {e}")
+        # Force level 1 platform layout here to avoid any unexpected overrides
+        if self.level == 1:
+            from settings import platform_arr as _plat_arr_ref, platform_source as _plat_src_ref
+            try:
+                _plat_arr_ref.clear()
+                _plat_arr_ref.extend([
+                    [0, HEIGHT - 90, 260, 20, 2],
+                    [300, HEIGHT - 90, 180, 20, 2],
+                    [500, HEIGHT - 150, 260, 20, 2],
+                    [60, 320, 180, 20, 2],
+                    [120, 160, 150, 20, 2],
+                    [320, 280, 170, 20, 2],
+                    [360, 360, 120, 20, 2],
+                    [560, 300, 200, 20, 2],
+                ])
+                try:
+                    import settings
+                    settings.platform_source = "level1_forced_main"
+                except Exception:
+                    pass
+            except Exception:
+                pass
+        # Debug overlay removed; platforms render correctly on-screen
         
         # Preserve current player stats before recreating player
         prev_stats = None
@@ -354,7 +391,7 @@ class Game:
             self.all_sprites.add(bullet)
             self.monsterbullet.add(bullet)
         
-        for plat in platform_arr:
+        for plat in settings.platform_arr:
             p = Platform(self, *plat)
             self.all_sprites.add(p)
             self.platforms.add(p)
@@ -622,56 +659,72 @@ class Game:
             if self.level % 5 == 0:
                 # Boss level - check if monster is dead
                 if len(self.monster) == 0 and len(monster_arr) == 0:
-                    # Calculate time bonus/penalty
-                    level_time = (pg.time.get_ticks() - self.level_start_time) / 1000  # seconds
-                    if level_time < 60 and self.time_bonus_active:  # Under 60 seconds = bonus
-                        time_bonus = int((60 - level_time) * 10)  # 10 points per second saved
-                        self.score += time_bonus
-                    elif level_time > 120:  # Over 2 minutes = penalty
-                        time_penalty = int((level_time - 120) * 5)  # 5 points per second over
-                        self.score = max(0, self.score - time_penalty)
-                    # Perfect clear bonus - no damage taken
-                    if self.damage_taken_this_level == 0:
-                        self.score += 1000
-                    # Regenerate 10 health between levels (respect player's max_hearts)
-                    self.player.hearts = min(self.player.hearts + 10, getattr(self.player, 'max_hearts', 100))
-                    self.level += 1
-                    self.show_level_complete()
-                    if getattr(self, 'should_exit', False):
-                        return
-                    show_upgrade_screen(self)
-                    if getattr(self, 'should_exit', False):
-                        return
-                    self.start_level()
+                    # Set delay to show particles before level complete (60 frames = ~1 second at 60 FPS)
+                    if self.level_complete_delay_max == 0:
+                        self.level_complete_delay_max = 60
+                        self.level_complete_delay = 60
+                    
+                    self.level_complete_delay -= 1
+                    if self.level_complete_delay <= 0:
+                        # Calculate time bonus/penalty
+                        level_time = (pg.time.get_ticks() - self.level_start_time) / 1000  # seconds
+                        if level_time < 60 and self.time_bonus_active:  # Under 60 seconds = bonus
+                            time_bonus = int((60 - level_time) * 10)  # 10 points per second saved
+                            self.score += time_bonus
+                        elif level_time > 120:  # Over 2 minutes = penalty
+                            time_penalty = int((level_time - 120) * 5)  # 5 points per second over
+                            self.score = max(0, self.score - time_penalty)
+                        # Perfect clear bonus - no damage taken
+                        if self.damage_taken_this_level == 0:
+                            self.score += 1000
+                        # Regenerate 10 health between levels (respect player's max_hearts)
+                        self.player.hearts = min(self.player.hearts + 10, getattr(self.player, 'max_hearts', 100))
+                        self.level += 1
+                        self.level_complete_delay_max = 0
+                        self.show_level_complete()
+                        if getattr(self, 'should_exit', False):
+                            return
+                        show_upgrade_screen(self)
+                        if getattr(self, 'should_exit', False):
+                            return
+                        self.start_level()
             else:
                 # Normal level - check if goblins and skeletons are dead
                 if len(self.goblins) == 0 and len(goblins_arr) == 0 and len(self.skeletons) == 0 and len(skel_arr) == 0:
-                    # Calculate time bonus/penalty
-                    level_time = (pg.time.get_ticks() - self.level_start_time) / 1000  # seconds
-                    if level_time < 45 and self.time_bonus_active:  # Under 45 seconds = bonus
-                        time_bonus = int((45 - level_time) * 10)  # 10 points per second saved
-                        self.score += time_bonus
-                    elif level_time > 90:  # Over 90 seconds = penalty
-                        time_penalty = int((level_time - 90) * 5)  # 5 points per second over
-                        self.score = max(0, self.score - time_penalty)
-                    # Perfect clear bonus - no damage taken
-                    if self.damage_taken_this_level == 0:
-                        self.score += 1000
-                    # Regenerate 10 health between levels (respect player's max_hearts)
-                    self.player.hearts = min(self.player.hearts + 10, getattr(self.player, 'max_hearts', 100))
-                    self.level += 1
-                    self.show_level_complete()
-                    if getattr(self, 'should_exit', False):
-                        return
-                    show_upgrade_screen(self)
-                    if getattr(self, 'should_exit', False):
-                        return
-                    # Show boss warning if next level is a boss level
-                    if self.level % 5 == 0:
-                        self.show_boss_warning()
-                    if getattr(self, 'should_exit', False):
-                        return
-                    self.start_level()
+                    # Set delay to show particles before level complete (60 frames = ~1 second at 60 FPS)
+                    if self.level_complete_delay_max == 0:
+                        self.level_complete_delay_max = 60
+                        self.level_complete_delay = 60
+                    
+                    self.level_complete_delay -= 1
+                    if self.level_complete_delay <= 0:
+                        # Calculate time bonus/penalty
+                        level_time = (pg.time.get_ticks() - self.level_start_time) / 1000  # seconds
+                        if level_time < 45 and self.time_bonus_active:  # Under 45 seconds = bonus
+                            time_bonus = int((45 - level_time) * 10)  # 10 points per second saved
+                            self.score += time_bonus
+                        elif level_time > 90:  # Over 90 seconds = penalty
+                            time_penalty = int((level_time - 90) * 5)  # 5 points per second over
+                            self.score = max(0, self.score - time_penalty)
+                        # Perfect clear bonus - no damage taken
+                        if self.damage_taken_this_level == 0:
+                            self.score += 1000
+                        # Regenerate 10 health between levels (respect player's max_hearts)
+                        self.player.hearts = min(self.player.hearts + 10, getattr(self.player, 'max_hearts', 100))
+                        self.level += 1
+                        self.level_complete_delay_max = 0
+                        self.show_level_complete()
+                        if getattr(self, 'should_exit', False):
+                            return
+                        show_upgrade_screen(self)
+                        if getattr(self, 'should_exit', False):
+                            return
+                        # Show boss warning if next level is a boss level
+                        if self.level % 5 == 0:
+                            self.show_boss_warning()
+                        if getattr(self, 'should_exit', False):
+                            return
+                        self.start_level()
         
         hits_lava = pg.sprite.spritecollide(self.player, self.lava, False)
         hits_bullet = pg.sprite.spritecollide(self.player, self.monsterbullet, False)
@@ -998,6 +1051,7 @@ class Game:
         
         # self.draw_lives(self.screen, 5, HEIGHT - 5, self.player.lives, pright)
         # *after* drawing everything, flip the display
+        # Debug overlay removed
         pg.display.flip()
 
     def show_start_screen(self):

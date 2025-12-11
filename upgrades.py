@@ -1,4 +1,5 @@
 import pygame as pg
+import random
 from settings import *
 
 
@@ -22,36 +23,49 @@ def apply_upgrade(game, upgrade):
 def show_upgrade_screen(game):
     if not game.running or getattr(game, 'should_exit', False):
         return
-    upgrades = [
-        ("+10 Max Hearts", "max_hearts"),
+    
+    # All possible upgrades
+    all_upgrades = [
+        ("+10 Max Health", "max_hearts"),
         ("+1 Attack Power", "attack_power"),
-        ("+0.1 Speed Mult", "speed_mult"),
+        ("+0.1 Speed", "speed_mult"),
         ("+10 Max Mana", "max_mana"),
         ("+1 Max Combo", "max_combo"),
     ]
+    
+    # Randomly select 3 upgrades to display
+    upgrades = random.sample(all_upgrades, 3)
+    
     selected = 0
     waiting = True
     while waiting and game.running and not getattr(game, 'should_exit', False):
         game.clock.tick(FPS)
         game.screen.fill(BLACK)
-        game.draw_text("Choose an Upgrade!", 48, (0, 255, 0), WIDTH // 2, HEIGHT // 2 - 120)
+        game.draw_text("Choose an Upgrade!", 48, (0, 255, 0), WIDTH // 2, HEIGHT // 2 - 140)
 
         button_rects = []
+        # Larger buttons with better spacing
+        button_width = 400
+        button_height = 70
+        start_y = HEIGHT // 2 - 50
+        spacing = 90
+        
         for i, (label, _) in enumerate(upgrades):
-            rect = pg.Rect(WIDTH // 2 - 180, HEIGHT // 2 - 50 + i * 60, 360, 50)
+            rect = pg.Rect(WIDTH // 2 - button_width // 2, start_y + i * spacing, button_width, button_height)
             color = (120, 120, 40) if i == selected else (80, 80, 80)
             pg.draw.rect(game.screen, color, rect, 0)
-            pg.draw.rect(game.screen, (255, 255, 255), rect, 2)
+            pg.draw.rect(game.screen, (255, 255, 255), rect, 3)
             text_color = (255, 255, 0) if i == selected else (255, 255, 255)
-            game.draw_text(label, 28, text_color, rect.centerx, rect.centery)
+            # Use smaller font size to fit text
+            game.draw_text(label, 24, text_color, rect.centerx, rect.centery)
             button_rects.append(rect)
 
-        game.draw_text("Use UP/DOWN or mouse, ENTER to select", 20, (255, 255, 255), WIDTH // 2, HEIGHT - 80)
+        game.draw_text("Use UP/DOWN or mouse, ENTER to select", 18, (200, 200, 200), WIDTH // 2, HEIGHT - 100)
 
-        quit_rect = pg.Rect(WIDTH // 2 - 80, HEIGHT // 2 + 270, 160, 44)
-        pg.draw.rect(game.screen, (160, 80, 80), quit_rect, 0)
-        pg.draw.rect(game.screen, (255, 255, 255), quit_rect, 2)
-        game.draw_text("Quit", 28, (255, 255, 255), quit_rect.centerx, quit_rect.centery)
+        save_quit_rect = pg.Rect(WIDTH // 2 - 120, HEIGHT - 55, 240, 40)
+        pg.draw.rect(game.screen, (160, 80, 80), save_quit_rect, 0)
+        pg.draw.rect(game.screen, (255, 255, 255), save_quit_rect, 2)
+        game.draw_text("Save & Quit", 16, (255, 255, 255), save_quit_rect.centerx, save_quit_rect.centery)
 
         pg.display.flip()
 
@@ -81,6 +95,6 @@ def show_upgrade_screen(game):
                     if rect.collidepoint((mx, my)):
                         apply_upgrade(game, upgrades[i][1])
                         waiting = False
-                if quit_rect.collidepoint((mx, my)):
+                if save_quit_rect.collidepoint((mx, my)):
                     game.exit_now()
                     waiting = False

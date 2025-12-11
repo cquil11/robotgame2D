@@ -1,5 +1,17 @@
 # player and enemy classes for game
-from settings import *
+import settings
+from settings import WIDTH, HEIGHT, FPS, FONT_NAME, hs_file, BLACK, WHITE, RED, GREEN, BLUE, YELLOW
+from settings import goblins_arr, coin_arr, skel_arr, player_arr, monster_arr
+from settings import PLAYER_ACC, PLAYER_FRICTION, PLAYER_GRAV, PLAYER_JUMP
+from settings import platform_layer, lava_layer, player_layer, mob_layer, coin_layer, projectile_layer, monster_layer, particle_layer, powerup_layer
+from settings import pleft, pright, pleftj, prightj, plefth, prighth
+from settings import attack_normal_right, attack_normal_left, attack_critical_right, attack_critical_left
+from settings import attack_heavy_right, attack_heavy_left
+from settings import gleft, gright, sleft, sright
+from settings import monster_scary, arrow_skeleton, platform_image, lava, coin, heart_image
+from settings import game_over_sound, death_sound, jump_sound, death_sound_HIT, lava_burning_sound, sword_swing
+from settings import scream_sound, coin_sound, explosion_sound, goblin_death_sound, skeleton_death_sound
+from settings import play_song, songs
 import pygame as pg
 import random
 import math
@@ -178,30 +190,36 @@ class Player(pg.sprite.Sprite):
         if pg.time.get_ticks() - self.last_attack_time > 1500:
             self.consecutive_hits = 0
         
-        self.acc = vec(0, PLAYER_GRAV)
-        keys = pg.key.get_pressed()
-        if keys[pg.K_LEFT] | keys[pg.K_a]:
-            # Apply player's speed multiplier and speed boost
-            speed_multiplier = self.speed_mult * self.speed_mult_boost if self.speed_boost_active else self.speed_mult
-            self.acc.x = -PLAYER_ACC * speed_multiplier
-            self.facing_right = False
-            if self.vel.y >= 0:
-                self.image = pleft
-            if self.vel.y < 0:
-                self.image = pleftj
-        if keys[pg.K_RIGHT] | keys[pg.K_d]:
-            # Apply player's speed multiplier and speed boost
-            speed_multiplier = self.speed_mult * self.speed_mult_boost if self.speed_boost_active else self.speed_mult
-            self.acc.x = PLAYER_ACC * speed_multiplier
-            self.facing_right = True
-            if self.vel.y >= 0:
-                self.image = pright
-            if self.vel.y < 0:
-                self.image = prightj
+        # ATTACK ANIMATION TAKES PRECEDENCE - only update movement if not attacking
+        if not self.attacking:
+            self.acc = vec(0, PLAYER_GRAV)
+            keys = pg.key.get_pressed()
+            if keys[pg.K_LEFT] | keys[pg.K_a]:
+                # Apply player's speed multiplier and speed boost
+                speed_multiplier = self.speed_mult * self.speed_mult_boost if self.speed_boost_active else self.speed_mult
+                self.acc.x = -PLAYER_ACC * speed_multiplier
+                self.facing_right = False
+                if self.vel.y >= 0:
+                    self.image = pleft
+                if self.vel.y < 0:
+                    self.image = pleftj
+            if keys[pg.K_RIGHT] | keys[pg.K_d]:
+                # Apply player's speed multiplier and speed boost
+                speed_multiplier = self.speed_mult * self.speed_mult_boost if self.speed_boost_active else self.speed_mult
+                self.acc.x = PLAYER_ACC * speed_multiplier
+                self.facing_right = True
+                if self.vel.y >= 0:
+                    self.image = pright
+                if self.vel.y < 0:
+                    self.image = prightj
 
-        # slows player down over time
-        self.acc.x += self.vel.x * PLAYER_FRICTION
-
+            # slows player down over time
+            self.acc.x += self.vel.x * PLAYER_FRICTION
+        else:
+            # While attacking, reduce horizontal acceleration to maintain momentum but not add new movement
+            self.acc = vec(0, PLAYER_GRAV)
+            self.acc.x = self.vel.x * PLAYER_FRICTION
+        
         self.vel += self.acc
         self.pos += self.vel + 0.5 * self.acc
 
@@ -704,8 +722,8 @@ class Coin(pg.sprite.Sprite):
         while j == 2:
             j = random.randrange(5)
 
-        y_pos = platform_arr[j][1] - 15
-        x_pos = random.randrange(platform_arr[j][0], platform_arr[j][0] + platform_arr[j][2] - 10)
+        y_pos = settings.platform_arr[j][1] - 15
+        x_pos = random.randrange(settings.platform_arr[j][0], settings.platform_arr[j][0] + settings.platform_arr[j][2] - 10)
         self.rect.y = y_pos
         self.rect.x = x_pos
 
@@ -749,11 +767,11 @@ class Heart(pg.sprite.Sprite):
         self.heal_amount = 15  # How much health to restore
         
         # Place on a random platform
-        if len(platform_arr) > 0:
-            plat_index = random.randrange(len(platform_arr))
-            y_pos = platform_arr[plat_index][1] - 25
-            x_pos = random.randrange(platform_arr[plat_index][0], 
-                                     platform_arr[plat_index][0] + platform_arr[plat_index][2] - 20)
+        if len(settings.platform_arr) > 0:
+            plat_index = random.randrange(len(settings.platform_arr))
+            y_pos = settings.platform_arr[plat_index][1] - 25
+            x_pos = random.randrange(settings.platform_arr[plat_index][0], 
+                                     settings.platform_arr[plat_index][0] + settings.platform_arr[plat_index][2] - 20)
             self.rect.y = y_pos
             self.rect.x = x_pos
 
@@ -859,7 +877,7 @@ class Goblin(pg.sprite.Sprite):
         player_spawn_x = WIDTH / 2
         player_spawn_y = HEIGHT / 2
         
-        for idx, plat in enumerate(platform_arr):
+        for idx, plat in enumerate(settings.platform_arr):
             plat_x = plat[0]
             plat_y = plat[1]
             plat_w = plat[2]
@@ -875,9 +893,9 @@ class Goblin(pg.sprite.Sprite):
             i = 0  # Fallback
 
         # platform_arr may contain floats (from divisions in settings). Cast to int for pixel positions.
-        y_pos = int(platform_arr[i][1] - 30)
-        x_start = int(platform_arr[i][0])
-        x_end = int(min(platform_arr[i][0] + platform_arr[i][2] - 20, WIDTH - 20))
+        y_pos = int(settings.platform_arr[i][1] - 30)
+        x_start = int(settings.platform_arr[i][0])
+        x_end = int(min(settings.platform_arr[i][0] + settings.platform_arr[i][2] - 20, WIDTH - 20))
         # Ensure range is valid for randrange
         if x_end <= x_start:
             x_pos = x_start
@@ -1265,7 +1283,7 @@ class Skeleton(pg.sprite.Sprite):
         player_spawn_x = WIDTH / 2
         player_spawn_y = HEIGHT / 2
         
-        for idx, plat in enumerate(platform_arr):
+        for idx, plat in enumerate(settings.platform_arr):
             plat_x = plat[0]
             plat_y = plat[1]
             plat_w = plat[2]
@@ -1279,7 +1297,7 @@ class Skeleton(pg.sprite.Sprite):
         # If no platforms available, use any platform except player spawn area
         if len(available_platforms) == 0:
             # Fallback to any platform
-            for idx, plat in enumerate(platform_arr):
+            for idx, plat in enumerate(settings.platform_arr):
                 plat_x = plat[0]
                 plat_y = plat[1]
                 plat_w = plat[2]
@@ -1289,15 +1307,15 @@ class Skeleton(pg.sprite.Sprite):
             i = random.choice(available_platforms) if len(available_platforms) > 0 else 0
         else:
             i = random.choice(available_platforms)
-            platform_arr[i][4] = platform_arr[i][4] - 1
+            settings.platform_arr[i][4] = settings.platform_arr[i][4] - 1
 
-        y_pos = platform_arr[i][1] - 30
-        x_pos = random.randrange(platform_arr[i][0], platform_arr[i][0] + platform_arr[i][2] - 20)
+        y_pos = settings.platform_arr[i][1] - 30
+        x_pos = random.randrange(settings.platform_arr[i][0], settings.platform_arr[i][0] + settings.platform_arr[i][2] - 20)
 
-        self.x_lower_bound = platform_arr[i][0]
-        self.x_upper_bound = platform_arr[i][0] + platform_arr[i][2] - 20
+        self.x_lower_bound = settings.platform_arr[i][0]
+        self.x_upper_bound = settings.platform_arr[i][0] + settings.platform_arr[i][2] - 20
 
-        self.spawn_platform = platform_arr[i]
+        self.spawn_platform = settings.platform_arr[i]
         self.rect.y = y_pos
         self.rect.x = x_pos
         # Frozen state from freeze powerup

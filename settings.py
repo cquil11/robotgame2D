@@ -180,8 +180,12 @@ platform_arr = [[0, HEIGHT - 80, WIDTH // 2 - 80, 20, 2],
                 [WIDTH // 2 - 75, HEIGHT // 2, 150, 20, 2],
                 [100, HEIGHT // 3, 120, 20, 2]]
 
+# track where the current platform layout came from (for debug overlay)
+platform_source = "default"
+
 def reset_plat_list():
     global platform_arr
+    global platform_source
     platform_arr = [[0, HEIGHT - 80, WIDTH // 2 - 80, 20, 2],
                      [WIDTH // 2 + 80, HEIGHT - 80, WIDTH // 2 - 80, 20, 2],
                      [WIDTH // 2 - 50, (HEIGHT * 3) // 4 - 60, 100, 20, 2],
@@ -189,9 +193,11 @@ def reset_plat_list():
                      [WIDTH - 200, (HEIGHT * 5) // 8 - 60, 150, 20, 2],
                      [WIDTH // 2 - 75, HEIGHT // 2, 150, 20, 2],
                      [100, HEIGHT // 3, 120, 20, 2]]
+    platform_source = "reset_plat_list"
 
 def get_level_platforms(level):
     global platform_arr
+    global platform_source
     platform_arr = []
     
     # Level-specific seeds for consistent but varied layouts
@@ -199,19 +205,19 @@ def get_level_platforms(level):
     
     # Level 1: Special beginner-friendly layout
     if level == 1:
-        # Simple, safe layout with clear path - perfect for tutorial/intro
-        platform_arr.append([0, HEIGHT - 80, 150, 20, 2])           # Left platform (start)
-        platform_arr.append([200, HEIGHT - 80, 150, 20, 2])         # Left-middle platform
-        platform_arr.append([400, HEIGHT - 80, 150, 20, 2])         # Right-middle platform  
-        platform_arr.append([600, HEIGHT - 80, 150, 20, 2])         # Right platform
-        platform_arr.append([100, HEIGHT - 200, 140, 20, 2])        # Left middle tier
-        platform_arr.append([350, HEIGHT - 240, 100, 20, 2])        # Center top tier
-        platform_arr.append([550, HEIGHT - 200, 140, 20, 2])        # Right middle tier
+        # Layout tuned to match the provided screenshot (positions approximate for 800x600)
+        platform_arr.append([0, HEIGHT - 90, 260, 20, 2])            # ground left
+        platform_arr.append([300, HEIGHT - 90, 180, 20, 2])          # ground center
+        platform_arr.append([500, HEIGHT - 150, 260, 20, 2])         # low right pad
+        platform_arr.append([60, 320, 180, 20, 2])                   # mid-left
+        platform_arr.append([120, 160, 150, 20, 2])                  # top-left
+        platform_arr.append([320, 280, 170, 20, 2])                  # mid-center
+        platform_arr.append([360, 360, 120, 20, 2])                  # lower-center
+        platform_arr.append([560, 300, 200, 20, 2])                  # mid-right (player start area)
+        platform_source = "level1_custom"
         return
     
     # Choose a layout pattern based on level
-    pattern = level % 10  # 10 different patterns that rotate
-    
     # Boss levels (every 5th) get simpler, more open layouts for fireball room
     if level % 5 == 0:
         # Simple boss arena with wide open spaces
@@ -222,8 +228,14 @@ def get_level_platforms(level):
         platform_arr.append([WIDTH // 2 - 100, HEIGHT // 2 + 20, 200, 20, 2])
         platform_arr.append([60, HEIGHT // 3, 140, 20, 2])
         platform_arr.append([WIDTH - 200, HEIGHT // 3, 140, 20, 2])
+        platform_source = "boss_pattern"
+        return
         
-    elif pattern == 0:
+    # For non-boss levels, use pattern rotating through 10 designs
+    # level 2/12 -> pattern 1, level 3/13 -> pattern 2, etc.
+    pattern = (level - 1) % 10
+    
+    if pattern == 0:
         # STAIRCASE LEFT - platforms ascending from left to right
         platform_arr.append([20, HEIGHT - 80, 180, 20, 2])
         platform_arr.append([220, HEIGHT - 160, 160, 20, 2])
@@ -231,6 +243,7 @@ def get_level_platforms(level):
         platform_arr.append([560, HEIGHT - 320, 120, 20, 2])
         platform_arr.append([100, HEIGHT - 400, 150, 20, 2])
         platform_arr.append([450, HEIGHT - 480, 180, 20, 2])
+        platform_source = "pattern_0"
         
     elif pattern == 1:
         # STAIRCASE RIGHT - platforms descending from left to right
@@ -240,6 +253,7 @@ def get_level_platforms(level):
         platform_arr.append([530, HEIGHT - 240, 140, 20, 2])
         platform_arr.append([150, HEIGHT - 160, 180, 20, 2])
         platform_arr.append([550, HEIGHT - 80, 180, 20, 2])
+        platform_source = "pattern_1"
         
     elif pattern == 2:
         # PILLARS - tall vertical columns of platforms
@@ -252,6 +266,7 @@ def get_level_platforms(level):
         platform_arr.append([620, HEIGHT - 80, 100, 20, 2])
         platform_arr.append([620, HEIGHT - 200, 100, 20, 2])
         platform_arr.append([620, HEIGHT - 320, 100, 20, 2])
+        platform_source = "pattern_2"
         
     elif pattern == 3:
         # PYRAMID - platforms form a pyramid shape
@@ -264,6 +279,7 @@ def get_level_platforms(level):
         platform_arr.append([250, HEIGHT - 380, 80, 20, 2])
         platform_arr.append([470, HEIGHT - 380, 80, 20, 2])
         platform_arr.append([360, HEIGHT - 480, 80, 20, 2])
+        platform_source = "pattern_3"
         
     elif pattern == 4:
         # ZIGZAG - alternating left-right platforms
@@ -274,6 +290,7 @@ def get_level_platforms(level):
         platform_arr.append([250, HEIGHT - 400, 200, 20, 2])
         platform_arr.append([50, HEIGHT - 480, 150, 20, 2])
         platform_arr.append([600, HEIGHT - 480, 150, 20, 2])
+        platform_source = "pattern_4"
         
     elif pattern == 6:
         # FLOATING ISLANDS - scattered small platforms
@@ -288,6 +305,7 @@ def get_level_platforms(level):
         platform_arr.append([450, HEIGHT - 420, 85, 20, 2])
         platform_arr.append([100, HEIGHT - 480, 100, 20, 2])
         platform_arr.append([600, HEIGHT - 500, 95, 20, 2])
+        platform_source = "pattern_6"
         
     elif pattern == 7:
         # PARKOUR - challenging jumps with gaps
@@ -299,6 +317,7 @@ def get_level_platforms(level):
         platform_arr.append([200, HEIGHT - 360, 120, 20, 2])
         platform_arr.append([520, HEIGHT - 440, 90, 20, 2])
         platform_arr.append([100, HEIGHT - 500, 130, 20, 2])
+        platform_source = "pattern_7"
         
     elif pattern == 8:
         # SPLIT ARENA - two separate sides with bridge
@@ -311,6 +330,7 @@ def get_level_platforms(level):
         platform_arr.append([320, HEIGHT - 260, 160, 20, 2])  # Bridge
         platform_arr.append([150, HEIGHT - 440, 120, 20, 2])
         platform_arr.append([530, HEIGHT - 440, 120, 20, 2])
+        platform_source = "pattern_8"
         
     elif pattern == 9:
         # SPIRAL - platforms in a spiral pattern
@@ -322,6 +342,7 @@ def get_level_platforms(level):
         platform_arr.append([80, HEIGHT - 360, 120, 20, 2])
         platform_arr.append([50, HEIGHT - 240, 140, 20, 2])
         platform_arr.append([150, HEIGHT - 120, 150, 20, 2])
+        platform_source = "pattern_9"
         
     else:
         # RANDOM CHAOS - completely random placement
@@ -333,6 +354,7 @@ def get_level_platforms(level):
             if x + w > WIDTH - 10:
                 w = WIDTH - x - 20
             platform_arr.append([x, y, w, 20, 2])
+        platform_source = "pattern_random"
     
     # Reset random seed to not affect other random calls
     random.seed()
