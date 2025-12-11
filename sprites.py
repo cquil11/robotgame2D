@@ -11,7 +11,7 @@ from settings import gleft, gright, sleft, sright
 from settings import monster_scary, arrow_skeleton, platform_image, lava, coin, heart_image
 from settings import game_over_sound, death_sound, jump_sound, death_sound_HIT, lava_burning_sound, sword_swing
 from settings import scream_sound, coin_sound, explosion_sound, goblin_death_sound, skeleton_death_sound
-from settings import play_song, songs
+from settings import play_song, songs, _knight_frames
 import pygame as pg
 import random
 import math
@@ -38,19 +38,25 @@ class Player(pg.sprite.Sprite):
         self.pos = vec(WIDTH /2, HEIGHT / 2)
         self.vel = vec(0, 0)
         self.acc = vec(0, 0)
-        self.lives = 3
+        # Initialize common combat state
         self.attacking = False
         self.attack_timer = 0
-        self.facing_right = False
-        self.attack_frame = 0  # Current animation frame
-        self.attack_frame_timer = 0  # Timer for frame advancement
-        self.attack_combo = 0  # Track combo hits
-        self.last_attack_time = 0  # Track time for combo window
+        self.attack_combo = 1
+        self.attack_type = 'normal'
+        self.attack_frame = 0
+        self.attack_frame_timer = 0
+        self.last_attack_time = 0
+        self.facing_right = True
+
+        # Animation state
+        self.anim_index = 0
+        self.anim_timer = 0
+        self.anim_speed = 6  # frames per change
+
         # Attack energy system for charge attacks
         self.attack_energy = 0  # Builds up over time during attack stance
         self.max_attack_energy = 100
         self.attack_energy_regen = 3.0  # Builds up during charging
-        self.attack_type = 'normal'  # 'normal', 'heavy', 'critical'
         self.charge_timer = 0  # Tracks charge time for heavy attacks
         self.consecutive_hits = 0  # Tracks hits in current combo
         # Mana settings
@@ -75,7 +81,8 @@ class Player(pg.sprite.Sprite):
         if hits:
             jump_sound.play()
             self.vel.y = PLAYER_JUMP
-            self.image = pright
+            # show jump frame
+            self.image = prightj if self.facing_right else pleftj
 
     def hit(self):
         sword_swing.play()
@@ -85,6 +92,9 @@ class Player(pg.sprite.Sprite):
         # Store last attack time for combo window tracking
         self.last_attack_time = current_time
         self.attacking = True
+        
+        # Track enemies already hit by this attack
+        self.hit_enemies_this_attack = set()
         
         # Reset animation
         self.attack_frame = 0
@@ -145,13 +155,16 @@ class Player(pg.sprite.Sprite):
                 if self.attack_frame >= total_frames:
                     self.attack_frame = total_frames - 1  # Stay on last frame
             
-            # Set the appropriate animation frame
-            if self.attack_type == 'heavy':
-                frames = attack_heavy_right if self.facing_right else attack_heavy_left
-            elif self.attack_type == 'critical':
-                frames = attack_critical_right if self.facing_right else attack_critical_left
-            else:  # normal
-                frames = attack_normal_right if self.facing_right else attack_normal_left
+            # Set the appropriate animation frame (prefer knight sheet if available)
+            if _knight_frames:
+                frames = _knight_frames['attack_right'] if self.facing_right else _knight_frames['attack_left']
+            else:
+                if self.attack_type == 'heavy':
+                    frames = attack_heavy_right if self.facing_right else attack_heavy_left
+                elif self.attack_type == 'critical':
+                    frames = attack_critical_right if self.facing_right else attack_critical_left
+                else:  # normal
+                    frames = attack_normal_right if self.facing_right else attack_normal_left
             
             if self.attack_frame < len(frames):
                 self.image = frames[self.attack_frame]
@@ -192,6 +205,12 @@ class Player(pg.sprite.Sprite):
         
         # ATTACK ANIMATION TAKES PRECEDENCE - only update movement if not attacking
         if not self.attacking:
+            # Advance general animation timer
+            self.anim_timer += 1
+            if self.anim_timer >= self.anim_speed:
+                self.anim_timer = 0
+                self.anim_index += 1
+
             self.acc = vec(0, PLAYER_GRAV)
             keys = pg.key.get_pressed()
             if keys[pg.K_LEFT] | keys[pg.K_a]:
@@ -199,19 +218,35 @@ class Player(pg.sprite.Sprite):
                 speed_multiplier = self.speed_mult * self.speed_mult_boost if self.speed_boost_active else self.speed_mult
                 self.acc.x = -PLAYER_ACC * speed_multiplier
                 self.facing_right = False
-                if self.vel.y >= 0:
-                    self.image = pleft
-                if self.vel.y < 0:
-                    self.image = pleftj
+                if _knight_frames:
+                    # Use sprite-sheet idle/jump frames
+                    self.image = (_knight_frames['walk_left'][self.anim_index % len(_knight_frames['walk_left'])]
+                                  if self.vel.y >= 0 else _knight_frames['jump_left'][0])
+                else:
+                    if self.vel.y >= 0:
+                        self.image = pleft
+                    if self.vel.y < 0:
+                        self.image = pleftj
             if keys[pg.K_RIGHT] | keys[pg.K_d]:
                 # Apply player's speed multiplier and speed boost
                 speed_multiplier = self.speed_mult * self.speed_mult_boost if self.speed_boost_active else self.speed_mult
                 self.acc.x = PLAYER_ACC * speed_multiplier
                 self.facing_right = True
-                if self.vel.y >= 0:
-                    self.image = pright
-                if self.vel.y < 0:
-                    self.image = prightj
+                if _knight_frames:
+                    self.image = (_knight_frames['walk_right'][self.anim_index % len(_knight_frames['walk_right'])]
+                                  if self.vel.y >= 0 else _knight_frames['jump_right'][0])
+                else:
+                    if self.vel.y >= 0:
+                        self.image = pright
+                    if self.vel.y < 0:
+                        self.image = prightj
+
+            # If no horizontal input, show idle frame from sheet
+            if _knight_frames and not (keys[pg.K_LEFT] | keys[pg.K_a] | keys[pg.K_RIGHT] | keys[pg.K_d]):
+                idle_key = 'idle_right' if self.facing_right else 'idle_left'
+                idle_frames = _knight_frames[idle_key]
+                if idle_frames:
+                    self.image = idle_frames[self.anim_index % len(idle_frames)]
 
             # slows player down over time
             self.acc.x += self.vel.x * PLAYER_FRICTION
@@ -238,6 +273,15 @@ class Player(pg.sprite.Sprite):
             self.fireball_cooldown = 30  # 1 second cooldown at 30 FPS
             return Fireball(self.game, self.rect.center, target_pos)
         return None
+    
+    def activate_shield(self):
+        """Activate a protective shield that costs mana"""
+        shield_cost = 20  # Mana cost for shield
+        if self.mana >= shield_cost and not self.shield_active:
+            self.mana -= shield_cost
+            self.shield_active = True
+            return True
+        return False
     
     def get_attack_rect(self):
         """Returns the hitbox for sword attack - width matches player model"""
@@ -266,13 +310,29 @@ class Player(pg.sprite.Sprite):
         
         return attack_rect
     
+    def draw_health_bar(self, screen, offset_x=0, offset_y=0):
+        """Draw a health bar above the player's head (for debug/status display)"""
+        bar_width = 50
+        bar_height = 5
+        bar_x = self.rect.centerx - bar_width // 2 + offset_x
+        bar_y = self.rect.top - 15 + offset_y
+        
+        # Background (dark red)
+        pg.draw.rect(screen, (50, 20, 20), (bar_x, bar_y, bar_width, bar_height))
+        # Health (green)
+        health_percent = max(0, self.hearts / self.max_hearts)
+        health_width = int(health_percent * bar_width)
+        pg.draw.rect(screen, (0, 200, 0), (bar_x, bar_y, health_width, bar_height))
+        # Border
+        pg.draw.rect(screen, (255, 255, 255), (bar_x, bar_y, bar_width, bar_height), 1)
+    
     def get_attack_damage(self):
         """Returns damage based on attack type, combo level, energy, and powerups"""
         base = getattr(self, 'attack_power', 1)
         combo_bonus = max(0, self.attack_combo - 1) * 0.5  # +0.5 per combo level
         
-        # Attack type modifiers
-        type_multiplier = 1.0
+        # Attack type modifiers (reduced normal damage)
+        type_multiplier = 0.7  # Normal attacks deal 70% damage
         if self.attack_type == 'heavy':
             type_multiplier = 2.0  # Double damage for heavy attacks
         elif self.attack_type == 'critical':
@@ -340,11 +400,22 @@ class Monster(pg.sprite.Sprite):
         self.rect = self.image.get_rect()
         self.rect.x = x
         self.rect.y = y
-        # Boss flies around the entire map - both horizontal and vertical
-        self.vx = random.choice([-6, -4, 4, 6])  # Faster horizontal movement
-        self.vy = random.choice([-3, -2, 2, 3])  # Add vertical movement
-        self.health = 60  # Increased from 50 to 60 HP
+        # Boss movement (slower for balance)
+        self.vx = random.choice([-4, -3, 3, 4])  # Reduced horizontal speed
+        self.vy = random.choice([-2, -1, 1, 2])  # Reduced vertical speed
+        self.max_speed = 3.0  # Flying speed
+        self.health = 60  # Boss HP unchanged
         self.max_health = 60
+        # Enable flying behavior
+        self.flying = True
+        self.wing_timer = 0
+        self.wing_frame = 0
+        # Create fallback wing frames if not available
+        try:
+            self._build_wing_frames()
+        except Exception:
+            self.left_frames = [self.image]
+            self.right_frames = [self.image]
         # Create a smaller hitbox for player damage (just the moving box part)
         # The monster image is 128x128, the actual moving box is roughly in the middle
         self.damage_hitbox = pg.Rect(0, 0, 60, 60)  # Smaller hitbox for the box
@@ -355,6 +426,17 @@ class Monster(pg.sprite.Sprite):
         # Shooting behavior
         self.shoot_timer = 0
         self.shoot_pattern = 0  # Cycle through different shooting patterns
+    
+    def _build_wing_frames(self):
+        """Create wing animation frames for flying boss (fallback to default if not available)"""
+        # Try to load boss wing frames; fallback to base image
+        try:
+            # For now, just use the monster_scary image as-is
+            self.left_frames = [monster_scary]
+            self.right_frames = [monster_scary]
+        except Exception:
+            self.left_frames = [self.image]
+            self.right_frames = [self.image]
     
     def update_hitbox(self):
         """Update the damage hitbox position to follow the monster"""
@@ -373,9 +455,57 @@ class Monster(pg.sprite.Sprite):
         if self.frozen:
             return
         
-        # Boss flies around the entire map
-        self.rect.x += self.vx
+        # Flying behavior: ignore gravity/platforms and steer smoothly toward player
+        if getattr(self, 'flying', False):
+            # Wing flap animation timer
+            self.wing_timer += 1
+            if self.wing_timer % 8 == 0:
+                self.wing_frame = (self.wing_frame + 1) % len(self.left_frames)
+            # Choose frame based on facing
+            if self.vx >= 0:
+                self.image = self.right_frames[self.wing_frame]
+            else:
+                self.image = self.left_frames[self.wing_frame]
+
+            # Seek player smoothly
+            if len(player_arr) > 0:
+                player = player_arr[0]
+                px, py = player.rect.centerx, player.rect.centery
+                gx, gy = self.rect.centerx, self.rect.centery
+                dx = px - gx
+                dy = py - gy
+                dist = math.hypot(dx, dy)
+                if dist > 0:
+                    # Desired velocity (slightly slower vertical to feel floaty)
+                    desired_vx = (dx / dist) * self.max_speed
+                    desired_vy = (dy / dist) * (self.max_speed * 0.85)
+                else:
+                    desired_vx, desired_vy = 0.0, 0.0
+                # Smooth acceleration
+                self.vx = self.vx * 0.85 + desired_vx * 0.15
+                self.vy = self.vy * 0.85 + desired_vy * 0.15
+            else:
+                # Gentle idle bob
+                self.vx *= 0.95
+                self.vy += math.sin(pg.time.get_ticks() * 0.002) * 0.02
+
+            # Apply movement
+            self.rect.x += int(round(self.vx))
+            self.rect.y += int(round(self.vy))
+
+            # Clamp within screen bounds
+            self.rect.x = max(0, min(self.rect.x, WIDTH - self.rect.width))
+            self.rect.y = max(0, min(self.rect.y, HEIGHT - self.rect.height))
+
+            self.update_hitbox()
+            return  # Skip the rest of the update when flying
+
+        # Non-flying boss: Apply gravity
+        self.vy += 0.8
         self.rect.y += self.vy
+        
+        # Boss movement (side to side)
+        self.rect.x += self.vx
         
         # Bounce off walls (horizontal)
         if self.rect.x >= WIDTH - 128:
@@ -383,17 +513,27 @@ class Monster(pg.sprite.Sprite):
         elif self.rect.x <= 0:
             self.vx = abs(self.vx)
         
-        # Bounce off ceiling and floor (vertical)
+        # Bounce off ceiling and respect lava top as floor (vertical)
         if self.rect.y <= 50:  # Don't go too far up (below UI panel)
             self.vy = abs(self.vy)
-        elif self.rect.y >= HEIGHT - 128:
-            self.vy = -abs(self.vy)
+        else:
+            # Determine the top of lava if present; otherwise use screen bottom
+            lava_top = HEIGHT
+            try:
+                if hasattr(self.game, 'lava') and len(self.game.lava) > 0:
+                    lava_top = min(l.rect.top for l in self.game.lava)
+            except Exception:
+                lava_top = HEIGHT - 40
+            # Prevent boss from going below lava top
+            if self.rect.bottom >= lava_top:
+                self.rect.bottom = lava_top
+                self.vy = -abs(self.vy)
         
         # Occasionally change direction for unpredictable movement
         if random.random() < 0.02:
-            self.vx = random.choice([-6, -4, 4, 6])
+            self.vx = random.choice([-4, -3, 3, 4])
         if random.random() < 0.02:
-            self.vy = random.choice([-3, -2, 2, 3])
+            self.vy = random.choice([-2, -1, 1, 2])
         
         self.update_hitbox()  # Keep hitbox in sync
     
@@ -489,7 +629,7 @@ class Fireball(pg.sprite.Sprite):
 
 
 class Explosion(pg.sprite.Sprite):
-    """Simple explosion animation that also applies area damage on creation.
+    """Detailed explosion animation with multi-layer effects that applies area damage on creation.
 
     Parameters:
       game: reference to Game
@@ -507,20 +647,46 @@ class Explosion(pg.sprite.Sprite):
         self.damage = damage
         self.exclude = exclude_sprite
 
-        # Pre-generate simple expanding-circle frames for animation
+        # Pre-generate detailed multi-frame explosion animation
         self.frames = []
-        sizes = [int(radius * t) for t in (0.25, 0.5, 0.75, 1.0)]
-        for s in sizes:
-            surf = pg.Surface((s*2, s*2), pg.SRCALPHA)
-            # Outer glow
-            pg.draw.circle(surf, (255, 140, 0, 160), (s, s), s)
-            # Inner bright
-            pg.draw.circle(surf, (255, 220, 0, 220), (s, s), max(1, int(s*0.5)))
+        # Expand in 8 frames for smoother animation
+        for frame_num in range(8):
+            progress = (frame_num + 1) / 8.0
+            frame_radius = int(radius * progress)
+            
+            # Create larger surface for better detail
+            surf = pg.Surface((radius * 2.5, radius * 2.5), pg.SRCALPHA)
+            center = radius * 1.25
+            
+            # Multiple layers for depth
+            # Outer shock wave (semi-transparent orange)
+            if frame_radius > 0:
+                pg.draw.circle(surf, (255, 100, 0, 100), (int(center), int(center)), int(frame_radius * 1.2))
+            
+            # Main explosion body (bright orange/yellow gradient simulation)
+            if frame_radius > 2:
+                pg.draw.circle(surf, (255, 140, 0, 180), (int(center), int(center)), int(frame_radius))
+                pg.draw.circle(surf, (255, 180, 0, 200), (int(center), int(center)), int(frame_radius * 0.75))
+            
+            # Hot inner core (bright yellow-white)
+            if frame_radius > 4:
+                pg.draw.circle(surf, (255, 220, 50, 230), (int(center), int(center)), int(frame_radius * 0.5))
+                pg.draw.circle(surf, (255, 240, 100, 255), (int(center), int(center)), int(frame_radius * 0.25))
+            
+            # Add some scattered sparks for detail (random dots)
+            spark_count = int(frame_num * 2) + 2
+            for _ in range(spark_count):
+                spark_x = center + random.randint(-int(frame_radius), int(frame_radius))
+                spark_y = center + random.randint(-int(frame_radius), int(frame_radius))
+                spark_size = random.randint(1, 3)
+                spark_color = random.choice([(255, 200, 0), (255, 150, 0), (200, 100, 0)])
+                pg.draw.circle(surf, spark_color, (int(spark_x), int(spark_y)), spark_size)
+            
             self.frames.append(surf)
 
         self.frame_index = 0
         self.frame_timer = 0
-        self.frame_delay = 4
+        self.frame_delay = 3  # Faster animation for snappier feel
         self.image = self.frames[0]
         self.rect = self.image.get_rect(center=pos)
 
@@ -637,8 +803,8 @@ class Arrow(pg.sprite.Sprite):
             self.vx = speed
             self.vy = 0
 
-        # Damage and lifetime for balance
-        self.damage = 4
+        # Damage and lifetime for balance (increased damage)
+        self.damage = 7
         self.lifetime = 180
         self.animation_timer = 0
         
@@ -790,7 +956,14 @@ class MonsterBullet(pg.sprite.Sprite):
     def __init__(self, target_pos=None):
         pg.sprite.Sprite.__init__(self)
         self._layer = projectile_layer
-        self.image = lava_ball
+        # Use preloaded lava_ball if available; otherwise create a fallback sprite
+        try:
+            self.image = lava_ball
+        except Exception:
+            surf = pg.Surface((18, 18), pg.SRCALPHA)
+            pg.draw.circle(surf, (255, 100, 0), (9, 9), 9)
+            pg.draw.circle(surf, (255, 180, 60), (9, 9), 5)
+            self.image = surf
         self.rect = self.image.get_rect()
         self.pos = vec(WIDTH / 2, HEIGHT / 2)
         
@@ -848,10 +1021,25 @@ class Goblin(pg.sprite.Sprite):
         # Elite enemies are faster and have more health
         # Progressive difficulty also increases speed
         elite_mult = 1.3 if is_elite else 1.0
-        self.vx = random.choice([-4, 4]) * elite_mult * speed_mult
-        self.vy = 0
+        # Flying goblins: tuned speed (faster)
+        self.max_speed = 3.6 * elite_mult * max(0.8, speed_mult)
+        self.vx = 0.0
+        self.vy = 0.0
         self.on_ground = False
-        self.health = 5 if is_elite else 2  # Elite goblins take 5 hits
+        # Enable flying behavior
+        self.flying = True
+
+        # Precompute wing frames to overlay on base goblin images
+        try:
+            self._build_wing_frames()
+        except Exception:
+            # Fail safe: fall back to base images if draw fails
+            self.left_frames = [self.image_left]
+            self.right_frames = [self.image_right]
+        self.wing_frame = 0
+        self.wing_timer = 0
+        # Tougher goblins: increase health
+        self.health = 8 if is_elite else 4  # Elite: 8 hits, normal: 4
         self.max_health = self.health
         self.jump_cooldown = 0
         # Goblin attack system
@@ -918,6 +1106,123 @@ class Goblin(pg.sprite.Sprite):
         if self.frozen:
             return
         
+        # Flying goblins use steering movement and ignore gravity/platforms
+        if getattr(self, 'flying', False):
+            # Target player if available
+            if len(player_arr) > 0:
+                player = player_arr[0]
+                px, py = player.rect.centerx, player.rect.centery
+                gx, gy = self.rect.centerx, self.rect.centery
+                dx = px - gx
+                dy = py - gy
+                dist = (dx*dx + dy*dy) ** 0.5
+                if dist > 0:
+                    desired_vx = (dx / dist) * self.max_speed
+                    desired_vy = (dy / dist) * self.max_speed
+                else:
+                    desired_vx = 0
+                    desired_vy = 0
+            else:
+                # No player: gentle hover
+                desired_vx = 0
+                desired_vy = 0
+
+            # Smoothly steer toward desired velocity
+            steer = 0.25  # interpolation factor
+            self.vx = self.vx + (desired_vx - self.vx) * steer
+            self.vy = self.vy + (desired_vy - self.vy) * steer
+
+            # Clamp speed
+            speed = (self.vx*self.vx + self.vy*self.vy) ** 0.5
+            if speed > self.max_speed and speed > 0:
+                scale = self.max_speed / speed
+                self.vx *= scale
+                self.vy *= scale
+
+            # Update position with floats
+            self.rect.x += self.vx
+            self.rect.y += self.vy
+
+            # Keep within screen bounds
+            if self.rect.left < 0:
+                self.rect.left = 0
+                self.vx = abs(self.vx)
+            if self.rect.right > WIDTH:
+                self.rect.right = WIDTH
+                self.vx = -abs(self.vx)
+            if self.rect.top < 0:
+                self.rect.top = 0
+                self.vy = abs(self.vy)
+            if self.rect.bottom > HEIGHT:
+                self.rect.bottom = HEIGHT
+                self.vy = -abs(self.vy)
+
+            # Wing animation/image facing
+            self.wing_timer += 1
+            if self.wing_timer >= 8:
+                self.wing_timer = 0
+                self.wing_frame = 1 - self.wing_frame
+            facing_right = self.vx >= 0
+            try:
+                if facing_right and hasattr(self, 'right_frames'):
+                    self.image = self.right_frames[self.wing_frame % len(self.right_frames)]
+                elif hasattr(self, 'left_frames'):
+                    self.image = self.left_frames[self.wing_frame % len(self.left_frames)]
+            except Exception:
+                self.image = gright if facing_right else gleft
+
+            # Attack system for flyers: use Euclidean distance
+            if self.attack_timer > 0:
+                self.attack_timer -= 1
+                if self.attack_timer == 0:
+                    self.attacking = False
+            if self.attack_cooldown > 0:
+                self.attack_cooldown -= 1
+            if len(player_arr) > 0 and self.attack_cooldown == 0 and not self.attacking:
+                player = player_arr[0]
+                dx = player.rect.centerx - self.rect.centerx
+                dy = player.rect.centery - self.rect.centery
+                dist = (dx*dx + dy*dy) ** 0.5
+                if dist < max(30, self.attack_range):
+                    self.attacking = True
+                    self.attack_timer = 15
+                    self.attack_cooldown = 60
+
+            # Apply damage to player during active attack when overlapping
+            if self.attacking and len(player_arr) > 0:
+                player = player_arr[0]
+                # Use attack rect for better hitbox
+                atk_rect = self.get_attack_rect()
+                if atk_rect and atk_rect.colliderect(player.rect):
+                    # Deal damage once per few frames
+                    if not hasattr(self, '_attack_tick'):
+                        self._attack_tick = 0
+                    self._attack_tick += 1
+                    if self._attack_tick % 4 == 0:
+                        if hasattr(player, 'take_damage'):
+                            try:
+                                player.take_damage(2)
+                            except Exception:
+                                pass
+                        elif hasattr(player, 'hearts'):
+                            player.hearts = max(0, player.hearts - 2)
+                        # Optional: small knockback
+                        kb = 2
+                        if self.rect.centerx < player.rect.centerx:
+                            player.rect.x += kb
+                        else:
+                            player.rect.x -= kb
+
+            # Apply golden tint for elite enemies
+            if self.is_elite and not hasattr(self, '_tinted'):
+                self.image = self.image.copy()
+                gold_overlay = pg.Surface(self.image.get_size(), pg.SRCALPHA)
+                gold_overlay.fill((255, 215, 0, 120))
+                self.image.blit(gold_overlay, (0, 0), special_flags=pg.BLEND_ADD)
+                self._tinted = True
+
+            return
+        
         # Apply gravity
         self.vy += 0.8
         self.rect.y += self.vy
@@ -935,17 +1240,18 @@ class Goblin(pg.sprite.Sprite):
                     self.vy = 0
                     self.on_ground = True
         
-        # Check lava collision - take damage if touching lava
-        for lava in self.game.lava:
-            if self.rect.colliderect(lava.rect):
-                # Goblin touched lava - instant death
-                lava_burning_sound.play()
-                self.kill()
-                if self in goblins_arr:
-                    goblins_arr.remove(self)
-                return  # Exit update to prevent further processing
+        # If flying, ignore lava/platform hazards entirely
+        if not getattr(self, 'flying', False):
+            # Check lava collision - take damage if touching lava
+            for lava in self.game.lava:
+                if self.rect.colliderect(lava.rect):
+                    lava_burning_sound.play()
+                    self.kill()
+                    if self in goblins_arr:
+                        goblins_arr.remove(self)
+                    return
         
-        # Look ahead before moving to avoid falling into lava
+        # Ground AI helpers – skipped for flyers
         # Check what's directly below and to the sides for lava
         will_fall_into_lava = False
         will_fall_off_platform = True
@@ -1000,8 +1306,8 @@ class Goblin(pg.sprite.Sprite):
             self.stuck_counter = 0
         self.last_x = self.rect.x
         
-        # GOBLIN AI: Intelligent chase and platform navigation
-        if len(player_arr) > 0:
+        # GOBLIN AI: Intelligent chase and platform navigation (ground only)
+        if len(player_arr) > 0 and not getattr(self, 'flying', False):
             player = player_arr[0]
             player_x = player.rect.centerx
             player_y = player.rect.centery
@@ -1085,15 +1391,27 @@ class Goblin(pg.sprite.Sprite):
         # Movement
         self.rect.x += self.vx
         
-        # Prevent goblin-goblin collisions - check for other goblins after moving
+        # Smooth goblin-goblin collisions - realistic push without swapping sides
         for goblin in goblins_arr:
             if goblin is not self and self.rect.colliderect(goblin.rect):
-                # Reverse both goblins' directions to separate them
-                self.vx = -self.vx
-                goblin.vx = -goblin.vx
-                # Move both goblins back slightly to prevent overlap
-                self.rect.x -= self.vx * 2
-                goblin.rect.x -= goblin.vx * 2
+                # Compute horizontal overlap
+                overlap = min(self.rect.right - goblin.rect.left, goblin.rect.right - self.rect.left)
+                if overlap > 0:
+                    half = (overlap / 2.0)
+                    # Determine relative direction using centers
+                    if self.rect.centerx <= goblin.rect.centerx:
+                        # self on the left, push left and other right
+                        self.rect.right -= half
+                        goblin.rect.left += half
+                        # apply mild opposing impulses
+                        self.vx = min(self.vx, 0)
+                        goblin.vx = max(getattr(goblin, 'vx', 0), 0)
+                    else:
+                        # self on the right, push right and other left
+                        self.rect.left += half
+                        goblin.rect.right -= half
+                        self.vx = max(self.vx, 0)
+                        goblin.vx = min(getattr(goblin, 'vx', 0), 0)
                 break  # Only handle one collision per frame
         
         # Attack system - goblins must attack to damage player
@@ -1155,6 +1473,12 @@ class Goblin(pg.sprite.Sprite):
             self.rect.x = WIDTH
         if self.rect.x > WIDTH:
             self.rect.x = 0
+        
+        # Keep within vertical bounds (prevent going too far off top/bottom)
+        if self.rect.y > HEIGHT + 100:
+            self.rect.y = -50
+        if self.rect.y < -50:
+            self.rect.y = HEIGHT + 100
         
         # Display attack animation if attacking
         if self.attacking:
@@ -1250,6 +1574,22 @@ class Goblin(pg.sprite.Sprite):
             return pg.Rect(self.rect.right - 10, self.rect.centery - attack_height//2, attack_width, attack_height)
         else:  # Facing left
             return pg.Rect(self.rect.left - attack_width + 10, self.rect.centery - attack_height//2, attack_width, attack_height)
+    
+    def draw_health_bar(self, screen, offset_x=0, offset_y=0):
+        """Draw a health bar above the goblin's head"""
+        bar_width = 40
+        bar_height = 4
+        bar_x = self.rect.centerx - bar_width // 2 + offset_x
+        bar_y = self.rect.top - 12 + offset_y
+        
+        # Background (dark red)
+        pg.draw.rect(screen, (50, 20, 20), (bar_x, bar_y, bar_width, bar_height))
+        # Health (green)
+        health_percent = max(0, self.health / self.max_health)
+        health_width = int(health_percent * bar_width)
+        pg.draw.rect(screen, (0, 200, 0), (bar_x, bar_y, health_width, bar_height))
+        # Border
+        pg.draw.rect(screen, (255, 255, 255), (bar_x, bar_y, bar_width, bar_height), 1)
 
 
 class Skeleton(pg.sprite.Sprite):
@@ -1268,7 +1608,8 @@ class Skeleton(pg.sprite.Sprite):
         self.on_ground = False  # Track if on platform
         self.jump_cooldown = 0  # Cooldown between jumps
         self.x_upper_bound = 0
-        self.health = 6 if is_elite else 3  # Elite skeletons take 6 hits
+        # Tougher skeletons: increase health
+        self.health = 10 if is_elite else 5  # Elite: 10 hits, normal: 5
         self.max_health = self.health
         # Increase base cooldown to reduce firing frequency
         self.shoot_timer = random.randint(40, 90)  # frames until next possible shot - increased fire rate
@@ -1327,6 +1668,22 @@ class Skeleton(pg.sprite.Sprite):
         if self.shooting:
             return self.rect
         return None
+    
+    def draw_health_bar(self, screen, offset_x=0, offset_y=0):
+        """Draw a health bar above the skeleton's head"""
+        bar_width = 40
+        bar_height = 4
+        bar_x = self.rect.centerx - bar_width // 2 + offset_x
+        bar_y = self.rect.top - 12 + offset_y
+        
+        # Background (dark red)
+        pg.draw.rect(screen, (50, 20, 20), (bar_x, bar_y, bar_width, bar_height))
+        # Health (green)
+        health_percent = max(0, self.health / self.max_health)
+        health_width = int(health_percent * bar_width)
+        pg.draw.rect(screen, (0, 200, 0), (bar_x, bar_y, health_width, bar_height))
+        # Border
+        pg.draw.rect(screen, (255, 255, 255), (bar_x, bar_y, bar_width, bar_height), 1)
 
     def update(self):
         # Update frozen timer
@@ -1475,16 +1832,38 @@ class Skeleton(pg.sprite.Sprite):
                         self.vx = abs(self.vx) * 0.7  # Move toward right edge
                     elif player_x < skeleton_x and self.rect.left > on_platform.left + 10:
                         self.vx = -abs(self.vx) * 0.7  # Move toward left edge
-                    else:
-                        self.vx = 0  # At edge
-                else:
-                    self.vx = 0
-            else:
-                # Perfect position - clear shot, good range, similar height
-                self.vx = 0
         
-        # Move horizontally
-        self.rect.x += self.vx
+        # Clamp to stay within bounds
+        if self.rect.x < 0:
+            self.rect.x = 0
+            self.vx = abs(self.vx)  # Bounce away from left edge
+        if self.rect.x > WIDTH - self.rect.width:
+            self.rect.x = WIDTH - self.rect.width
+            self.vx = -abs(self.vx)  # Bounce away from right edge
+        
+        # Keep within vertical bounds
+        if self.rect.y > HEIGHT + 100:
+            self.rect.y = -50  # Wrap to top if goes too far down
+        if self.rect.y < -50:
+            self.rect.y = HEIGHT + 100  # Wrap to bottom if goes too far up
+        
+        # Smooth skeleton-skeleton collisions - realistic push without swapping sides
+        for skeleton in skel_arr:
+            if skeleton is not self and self.rect.colliderect(skeleton.rect):
+                overlap = min(self.rect.right - skeleton.rect.left, skeleton.rect.right - self.rect.left)
+                if overlap > 0:
+                    half = (overlap / 2.0)
+                    if self.rect.centerx <= skeleton.rect.centerx:
+                        self.rect.right -= half
+                        skeleton.rect.left += half
+                        self.vx = min(self.vx, 0)
+                        skeleton.vx = max(getattr(skeleton, 'vx', 0), 0)
+                    else:
+                        self.rect.left += half
+                        skeleton.rect.right -= half
+                        self.vx = max(self.vx, 0)
+                        skeleton.vx = min(getattr(skeleton, 'vx', 0), 0)
+                break  # Only handle one collision per frame
         
         # Look ahead to detect edges/lava and prepare to jump
         test_rect = self.rect.copy()
@@ -1628,7 +2007,7 @@ class Skeleton(pg.sprite.Sprite):
                     self.walk_frame = 1 - self.walk_frame
                 if self.walk_frame == 1:
                     try:
-                        self.image = pg.image.load('images/enemies/skeleton_walk_0.png')
+                        self.image = pg.image.load('images/sprites/enemies/skeleton_walk_0.png')
                     except:
                         self.image = sleft
                 else:
@@ -1641,7 +2020,7 @@ class Skeleton(pg.sprite.Sprite):
                     self.walk_frame = 1 - self.walk_frame
                 if self.walk_frame == 1:
                     try:
-                        self.image = pg.image.load('images/enemies/skeleton_walk_1.png')
+                        self.image = pg.image.load('images/sprites/enemies/skeleton_walk_1.png')
                     except:
                         self.image = sright
                 else:
@@ -1796,17 +2175,50 @@ class Powerup(pg.sprite.Sprite):
         self.rect = self.image.get_rect()
         self.rect.x = x
         self.rect.y = y
-        self.vy = 2  # Fall speed
+        # Bouncing physics
+        self.vx = random.uniform(-2, 2)  # Horizontal velocity
+        self.vy = random.uniform(-3, 1)  # Initial vertical velocity (can start moving up)
+        self.gravity = 0.3  # Gravity for bouncing
+        self.bounce_dampening = 0.7  # Energy loss on bounce
         self.rotation = 0
         self.lifetime = 600  # 20 seconds at 30 FPS
     
     def update(self):
-        """Update powerup position and animation"""
+        """Update powerup position and animation with bouncing physics"""
+        # Apply gravity
+        self.vy += self.gravity
+        
+        # Update position
+        self.rect.x += self.vx
         self.rect.y += self.vy
+        
+        # Bounce off walls (left and right)
+        if self.rect.left <= 0:
+            self.rect.left = 0
+            self.vx = abs(self.vx) * self.bounce_dampening
+        elif self.rect.right >= WIDTH:
+            self.rect.right = WIDTH
+            self.vx = -abs(self.vx) * self.bounce_dampening
+        
+        # Bounce off floor
+        if self.rect.bottom >= HEIGHT:
+            self.rect.bottom = HEIGHT
+            self.vy = -abs(self.vy) * self.bounce_dampening
+            # Add small horizontal movement on bounce for variety
+            self.vx += random.uniform(-0.5, 0.5)
+        
+        # Bounce off ceiling
+        if self.rect.top <= 0:
+            self.rect.top = 0
+            self.vy = abs(self.vy) * self.bounce_dampening
+        
+        # Slow down horizontal movement gradually (friction)
+        self.vx *= 0.98
+        
         self.rotation += 5
         
-        # Remove if fallen off screen or expired
-        if self.rect.y > HEIGHT or self.lifetime <= 0:
+        # Remove if expired
+        if self.lifetime <= 0:
             self.kill()
             if self in powerup_arr:
                 powerup_arr.remove(self)

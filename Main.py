@@ -18,12 +18,31 @@ from game_utils import save_game, exit_now, wait_for_key
 class Game:
 
     def __init__(self):
+        # Windows-specific: Set taskbar icon FIRST (before pygame init)
+        try:
+            import ctypes
+            myappid = 'robotgame.2d.adventure.1'  # Arbitrary string
+            ctypes.windll.shell32.SetCurrentProcessExplicitAppUserModelID(myappid)
+        except Exception:
+            pass  # Not Windows or ctypes unavailable
+        
         # initialize game windows
         pg.init()
         pg.mixer.init()
+        
+        # Set custom window icon BEFORE creating the display
+        try:
+            # Use PNG for pygame (pygame doesn't support .ico files)
+            icon = pg.image.load('images/sprites/player/player_right.png')
+            pg.display.set_icon(icon)
+        except Exception as e:
+            print(f"Failed to load icon: {e}")
+            pass  # If icon loading fails, use default
+        
         # Open windowed mode with extra height for UI panel at the bottom
         # Use WINDOW_HEIGHT which includes the 80px UI panel
         self.screen = pg.display.set_mode((WIDTH, WINDOW_HEIGHT))
+        
         # Finalize images (convert surfaces) now that a display exists
         try:
             finalize_images()
@@ -117,6 +136,10 @@ class Game:
         # Delay after level complete before showing next screen (in ticks)
         self.level_complete_delay = 0
         self.level_complete_delay_max = 0
+        # Screen shake effect for dramatic moments
+        self.screen_shake_intensity = 0
+        self.screen_shake_timer = 0
+        self.screen_shake_max = 0
         self.load_data()
 
     def load_data(self):
@@ -341,21 +364,37 @@ class Game:
             monster_arr.append(mon)
         else:
             # Mixed enemy spawns for variety - both goblins and skeletons from level 1
-            total_enemies = min(8 + self.level * 2, 15)  # Scale up to 15 total
+            # Enhanced dynamic difficulty scaling with easier early levels
+            if self.level <= 2:
+                total_enemies = 3 + random.randint(0, 1)  # Levels 1-2: 3-4 enemies (EASY)
+            elif self.level <= 4:
+                total_enemies = 5 + random.randint(0, 1)  # Levels 3-4: 5-6 enemies (NORMAL)
+            elif self.level <= 6:
+                total_enemies = 7 + random.randint(0, 1)  # Levels 5-6: 7-8 enemies (HARD)
+            else:
+                total_enemies = min(9 + (self.level - 6) * 1.5, 20)  # Level 7+: progressively harder
             
             # Progressive difficulty - enemies get faster every 3 levels
             difficulty_tier = (self.level - 1) // 3
             speed_boost = 1.0 + (difficulty_tier * 0.15)  # 15% faster per tier
             
+            # Additional boost based on level parity (alternating harder/medium)
+            if self.level % 2 == 0:
+                speed_boost *= 1.1  # Even levels are 10% harder
+                total_enemies = int(total_enemies * 1.05)  # 5% more enemies
+            
             # Random mix ratio - more varied each level
-            goblin_ratio = random.uniform(0.4, 0.7)  # 40-70% goblins
+            # Later levels have more skeletons (harder ranged enemies)
+            skeleton_bias = min(0.7, 0.3 + (self.level * 0.05))  # Start 30%, up to 70%
+            goblin_ratio = 1.0 - skeleton_bias
             num_goblins = int(total_enemies * goblin_ratio)
             num_skeletons = total_enemies - num_goblins
             
             # Spawn goblins
             for i in range(num_goblins):
-                # 10% chance for elite (golden) goblin on level 3+
-                is_elite = self.level >= 3 and random.random() < 0.1
+                # Elite chance increases with level
+                elite_chance = min(0.3, 0.05 + (self.level * 0.025))  # 5% at level 1, up to 30%
+                is_elite = random.random() < elite_chance
                 goblin = Goblin(self, is_elite=is_elite, speed_mult=speed_boost)
                 self.all_sprites.add(goblin)
                 self.goblins.add(goblin)
@@ -363,8 +402,9 @@ class Game:
             
             # Spawn skeletons (from level 1 now)
             for i in range(num_skeletons):
-                # 10% chance for elite (golden) skeleton on level 3+
-                is_elite = self.level >= 3 and random.random() < 0.1
+                # Elite chance increases with level
+                elite_chance = min(0.3, 0.05 + (self.level * 0.025))  # 5% at level 1, up to 30%
+                is_elite = random.random() < elite_chance
                 skeleton = Skeleton(self, is_elite=is_elite, speed_mult=speed_boost)
                 self.all_sprites.add(skeleton)
                 self.skeletons.add(skeleton)
@@ -413,6 +453,14 @@ class Game:
 
     def update(self):
         self.score += 1
+        
+        # Update screen shake effect
+        if self.screen_shake_intensity > 0:
+            self.screen_shake_timer -= 1
+            if self.screen_shake_timer <= 0:
+                self.screen_shake_intensity = max(0, self.screen_shake_intensity - 1)
+                self.screen_shake_timer = self.screen_shake_max
+        
         # Only spawn monster bullets if monster exists (every 5th level)
         if self.level % 5 == 0 and len(monster_arr) > 0:
             # Boss shoots more frequently as the level progresses
@@ -460,10 +508,29 @@ class Game:
             hit_something = False
             if attack_rect:
                 for goblin in self.goblins:
-                    if attack_rect.colliderect(goblin.rect):
+                    # Only hit each enemy once per attack
+                    if attack_rect.colliderect(goblin.rect) and goblin not in getattr(self.player, 'hit_enemies_this_attack', set()):
+                        if not hasattr(self.player, 'hit_enemies_this_attack'):
+                            self.player.hit_enemies_this_attack = set()
+                        self.player.hit_enemies_this_attack.add(goblin)
                         old_health = goblin.health
                         goblin.take_damage(damage)
                         hit_something = True
+                        
+                        # Screen shake on hit (more for heavy/critical)
+                        shake_intensity = 2
+                        if self.player.attack_type == 'heavy':
+                            shake_intensity = 4
+                        elif self.player.attack_type == 'critical':
+                            shake_intensity = 5
+                        self.trigger_screen_shake(shake_intensity, 3)
+                        
+                        # Knockback enemy based on hit direction
+                        knockback_mult = 1.5 if self.player.attack_type == 'heavy' else 1.0
+                        if self.player.attack_type == 'critical':
+                            knockback_mult = 2.0
+                        goblin.vx += (4 if self.player.facing_right else -4) * knockback_mult
+                        
                         # Spawn particles on hit
                         for _ in range(5):
                             vx = random.uniform(-3, 3)
@@ -495,10 +562,29 @@ class Game:
                         self.score += int(base_score * elite_mult * combo_mult * attack_type_mult * streak_bonus)
                         
                 for skeleton in self.skeletons:
-                    if attack_rect.colliderect(skeleton.rect):
+                    # Only hit each enemy once per attack
+                    if attack_rect.colliderect(skeleton.rect) and skeleton not in getattr(self.player, 'hit_enemies_this_attack', set()):
+                        if not hasattr(self.player, 'hit_enemies_this_attack'):
+                            self.player.hit_enemies_this_attack = set()
+                        self.player.hit_enemies_this_attack.add(skeleton)
                         old_health = skeleton.health
                         skeleton.take_damage(damage)
                         hit_something = True
+                        
+                        # Screen shake on hit (more for heavy/critical)
+                        shake_intensity = 2
+                        if self.player.attack_type == 'heavy':
+                            shake_intensity = 4
+                        elif self.player.attack_type == 'critical':
+                            shake_intensity = 5
+                        self.trigger_screen_shake(shake_intensity, 3)
+                        
+                        # Knockback enemy based on hit direction
+                        knockback_mult = 1.5 if self.player.attack_type == 'heavy' else 1.0
+                        if self.player.attack_type == 'critical':
+                            knockback_mult = 2.0
+                        skeleton.vx += (4 if self.player.facing_right else -4) * knockback_mult
+                        
                         # Spawn particles on hit
                         for _ in range(5):
                             vx = random.uniform(-3, 3)
@@ -531,7 +617,11 @@ class Game:
                         
                 # Check for monster boss damage
                 for monster in self.monster:
-                    if attack_rect.colliderect(monster.rect):
+                    # Only hit each enemy once per attack
+                    if attack_rect.colliderect(monster.rect) and monster not in getattr(self.player, 'hit_enemies_this_attack', set()):
+                        if not hasattr(self.player, 'hit_enemies_this_attack'):
+                            self.player.hit_enemies_this_attack = set()
+                        self.player.hit_enemies_this_attack.add(monster)
                         old_health = monster.health
                         monster.take_damage(damage)
                         hit_something = True
@@ -736,30 +826,53 @@ class Game:
         for powerup in hits_powerups:
             powerup.apply(self.player)
         
-        hits_goblin = pg.sprite.spritecollide(self.player, self.goblins, False)
-        # Check goblin attacks - must be attacking to damage
-        goblin_attack_hit = False
-        for goblin in hits_goblin:
-            attack_rect = goblin.get_attack_rect()
-            if attack_rect and self.player.rect.colliderect(attack_rect):
-                goblin_attack_hit = True
-                break
-        hits_skeleton = pg.sprite.spritecollide(self.player, self.skeletons, False)
-        # Check skeleton attacks - must be attacking to damage
-        skeleton_attack_hit = False
-        for skeleton in hits_skeleton:
-            attack_rect = skeleton.get_attack_rect()
-            if attack_rect and self.player.rect.colliderect(attack_rect):
-                skeleton_attack_hit = True
-                break
-        # Check monster damage using the smaller damage_hitbox
+        # Check boss collision - boss can do damage
         hits_monster = False
         for monster in self.monster:
-            if self.player.rect.colliderect(monster.damage_hitbox):
+            if self.player.rect.colliderect(monster.rect):
                 hits_monster = True
                 break
-        """hits_coin = pg.sprite.spritecollide(self.player, self.coins, False)
-        hits_sword = pg.sprite.spritecollide(self.player, self.goblins, False)"""
+        
+        # Smooth collision prevention - realistic push between player and enemies
+        for goblin in self.goblins:
+            if self.player.rect.colliderect(goblin.rect):
+                overlap = min(self.player.rect.right - goblin.rect.left, goblin.rect.right - self.player.rect.left)
+                if overlap > 0:
+                    half = overlap / 2.0
+                    if self.player.rect.centerx <= goblin.rect.centerx:
+                        # player on left: push left, goblin right
+                        self.player.rect.right -= half
+                        goblin.rect.left += half
+                        # oppose motion for stability
+                        if self.player.vel.x > 0:
+                            self.player.vel.x *= 0.7
+                        goblin.vx = max(getattr(goblin, 'vx', 0) * 0.7, 0)
+                    else:
+                        # player on right: push right, goblin left
+                        self.player.rect.left += half
+                        goblin.rect.right -= half
+                        if self.player.vel.x < 0:
+                            self.player.vel.x *= 0.7
+                        goblin.vx = min(getattr(goblin, 'vx', 0) * 0.7, 0)
+        
+        for skeleton in self.skeletons:
+            if self.player.rect.colliderect(skeleton.rect):
+                overlap = min(self.player.rect.right - skeleton.rect.left, skeleton.rect.right - self.player.rect.left)
+                if overlap > 0:
+                    half = overlap / 2.0
+                    if self.player.rect.centerx <= skeleton.rect.centerx:
+                        self.player.rect.right -= half
+                        skeleton.rect.left += half
+                        if self.player.vel.x > 0:
+                            self.player.vel.x *= 0.7
+                        skeleton.vx = max(getattr(skeleton, 'vx', 0) * 0.7, 0)
+                    else:
+                        self.player.rect.left += half
+                        skeleton.rect.right -= half
+                        if self.player.vel.x < 0:
+                            self.player.vel.x *= 0.7
+                        skeleton.vx = min(getattr(skeleton, 'vx', 0) * 0.7, 0)
+        
         # DEATH
         if hits_lava:
             self.player.pos.y = hits_lava[0].rect.bottom
@@ -812,52 +925,15 @@ class Game:
                 play_song('sounds/death_song.mp3')
                 pg.time.wait(500)
                 self.playing = False
-        elif goblin_attack_hit:
-            # Goblin attack hit - only when goblin is attacking
-            # Apply damage only if player doesn't have shield
-            if not self.player.shield_active:
-                self.player.hearts -= 4
-                self.damage_taken_this_level += 4
-                self.kill_streak = 0  # Reset streak on damage
-                death_sound_HIT.play()
-            else:
-                # Shield absorbs the hit
-                self.player.shield_active = False
-            
-            if self.player.hearts < 0:
-                pg.mixer.music.stop()
-                play_song('sounds/death_song.mp3')
-                pg.time.wait(500)
-                self.playing = False
-        elif skeleton_attack_hit:
-            # Skeleton attack hit - only when skeleton is actively shooting
-            # Apply damage only if player doesn't have shield
-            if not self.player.shield_active:
-                self.player.hearts -= 6
-                self.damage_taken_this_level += 6
-                self.kill_streak = 0  # Reset streak on damage
-                death_sound_HIT.play()
-            else:
-                # Shield absorbs the hit
-                self.player.shield_active = False
-            
-            if self.player.hearts < 0:
-                pg.mixer.music.stop()
-                play_song('sounds/death_song.mp3')
-                pg.time.wait(500)
-                self.playing = False
         elif hits_monster:
-            # Monster boss does heavy damage
+            # Monster boss does heavy damage on collision
             if not self.player.shield_active:
                 self.player.hearts -= 8
                 self.damage_taken_this_level += 8
-                self.kill_streak = 0  # Reset streak on damage
+                self.kill_streak = 0
                 death_sound_HIT.play()
             else:
-                # Shield absorbs the hit
                 self.player.shield_active = False
-            self.kill_streak = 0  # Reset streak on damage
-            death_sound_HIT.play()
             if self.player.hearts < 0:
                 pg.mixer.music.stop()
                 play_song('sounds/death_song.mp3')
@@ -907,33 +983,75 @@ class Game:
                             self.player.jump()
                         except Exception:
                             pass
-            # Mouse buttons: left = sword attack, right = fireball
+                    # Fireball cast mapped to 'F' key
+                    elif event.key == pg.K_f:
+                        try:
+                            mouse_pos = pg.mouse.get_pos()
+                            fireball = self.player.cast_fireball(mouse_pos)
+                            if fireball:
+                                self.fireballs.add(fireball)
+                                self.all_sprites.add(fireball)
+                        except Exception:
+                            pass
+            # Mouse buttons: left = sword attack, right = shield
             if event.type == pg.MOUSEBUTTONDOWN and not self.paused:
                 if event.button == 1:  # Left mouse button -> melee hit
                     try:
                         self.player.hit()
                     except Exception:
                         pass
-                elif event.button == 3:  # Right mouse button -> cast fireball
-                    mouse_pos = pg.mouse.get_pos()
-                    fireball = self.player.cast_fireball(mouse_pos)
-                    if fireball:
-                        self.fireballs.add(fireball)
-                        self.all_sprites.add(fireball)
+                elif event.button == 3:  # Right mouse button -> activate shield
+                    try:
+                        self.player.activate_shield()
+                    except Exception:
+                        pass
+
+    def trigger_screen_shake(self, intensity=3, duration=5):
+        """Trigger screen shake effect for dramatic moments"""
+        self.screen_shake_intensity = intensity
+        self.screen_shake_timer = duration
+        self.screen_shake_max = duration
 
     def draw(self):
         # game loop draw
         # self.screen.blit(game_background, (0, 0))
         self.screen.fill(BLACK)
         
+        # Calculate screen shake offset
+        shake_offset_x = 0
+        shake_offset_y = 0
+        if self.screen_shake_intensity > 0:
+            shake_offset_x = random.randint(-self.screen_shake_intensity, self.screen_shake_intensity)
+            shake_offset_y = random.randint(-self.screen_shake_intensity, self.screen_shake_intensity)
+        
         # Low health warning - red tint overlay
         if self.player.hearts < 25:
             overlay = pg.Surface((WIDTH, HEIGHT))
             overlay.set_alpha(30)  # Semi-transparent
             overlay.fill((255, 0, 0))
-            self.screen.blit(overlay, (0, 0))
+            self.screen.blit(overlay, (shake_offset_x, shake_offset_y))
         
-        self.all_sprites.draw(self.screen)
+        # Draw all sprites with shake offset
+        for sprite in self.all_sprites:
+            if hasattr(sprite, 'image') and hasattr(sprite, 'rect'):
+                self.screen.blit(sprite.image, (sprite.rect.x + shake_offset_x, sprite.rect.y + shake_offset_y))
+        
+        # Draw enemy health bars
+        for goblin in self.goblins:
+            try:
+                goblin.draw_health_bar(self.screen, shake_offset_x, shake_offset_y)
+            except Exception:
+                pass
+        for skeleton in self.skeletons:
+            try:
+                skeleton.draw_health_bar(self.screen, shake_offset_x, shake_offset_y)
+            except Exception:
+                pass
+        for monster in self.monster:
+            try:
+                monster.draw_health_bar(self.screen, shake_offset_x, shake_offset_y)
+            except Exception:
+                pass
         
         # Draw bottom UI panel background (below the game area)
         ui_panel_height = 80
@@ -942,52 +1060,72 @@ class Game:
         # Optional: draw a subtle border on top of the panel
         pg.draw.line(self.screen, (50, 50, 50), (0, ui_panel_y), (WIDTH, ui_panel_y), 2)
         
-        # UI text positioned within the UI panel area
-        self.draw_text("LEVEL: " + str(self.level), 20, WHITE, WIDTH * 3 / 4 + 100, HEIGHT + 30)
-        self.draw_text("SCORE: " + str(self.score), 20, WHITE, WIDTH * 2 / 4 + 100, HEIGHT + 30)
+        # UI text positioned within the UI panel area - better spacing
+        panel_y_base = HEIGHT + 25
+        self.draw_text("SCORE: " + str(self.score), 20, WHITE, WIDTH / 2 - 80, panel_y_base)
+        self.draw_text("LEVEL: " + str(self.level), 20, WHITE, WIDTH / 2 + 80, panel_y_base)
+        
+        # Draw difficulty indicator with better positioning
+        difficulty_tier = (self.level - 1) // 3
+        difficulty_names = ["EASY", "NORMAL", "HARD", "HARDER", "EXTREME", "NIGHTMARE"]
+        difficulty_name = difficulty_names[min(difficulty_tier, len(difficulty_names) - 1)]
+        difficulty_colors = [(100, 200, 100), (100, 100, 200), (200, 100, 100), (200, 50, 50), (200, 0, 200), (255, 0, 0)]
+        difficulty_color = difficulty_colors[min(difficulty_tier, len(difficulty_colors) - 1)]
+        self.draw_text("DIFFICULTY: " + difficulty_name, 18, difficulty_color, WIDTH / 2 - 80, panel_y_base + 30)
         
         # Draw health bar (bottom left, within UI panel)
-        health_bar_width = 200
-        health_bar_height = 20
+        health_bar_width = 220
+        health_bar_height = 24
         health_bar_x = 20
-        health_bar_y = HEIGHT + 12
-        # Background (dark gray)
-        pg.draw.rect(self.screen, (50, 50, 50), (health_bar_x, health_bar_y, health_bar_width, health_bar_height))
-        # Health fill (color based on health level)
+        health_bar_y = HEIGHT + 28
+        # Background with rounded corners
+        pg.draw.rect(self.screen, (30, 30, 35), (health_bar_x - 2, health_bar_y - 2, health_bar_width + 4, health_bar_height + 4), border_radius=3)
+        pg.draw.rect(self.screen, (40, 40, 45), (health_bar_x, health_bar_y, health_bar_width, health_bar_height), border_radius=2)
+        # Health fill (color based on health level with smooth gradient)
         health_percent = self.player.hearts / self.player.max_hearts
         if health_percent > 0.5:
-            health_color = (0, 255, 0)  # Green
+            health_color = (50, 255, 50)  # Bright green
         elif health_percent > 0.25:
-            health_color = (255, 255, 0)  # Yellow
+            health_color = (255, 220, 0)  # Bright yellow
         else:
-            health_color = (255, 0, 0)  # Red
+            health_color = (255, 50, 50)  # Bright red
         health_width = int((health_percent) * health_bar_width)
-        pg.draw.rect(self.screen, health_color, (health_bar_x, health_bar_y, health_width, health_bar_height))
-        # Border
-        pg.draw.rect(self.screen, (255, 255, 255), (health_bar_x, health_bar_y, health_bar_width, health_bar_height), 2)
-        # Health text
+        if health_width > 0:
+            pg.draw.rect(self.screen, health_color, (health_bar_x + 1, health_bar_y + 1, health_width - 2, health_bar_height - 2), border_radius=1)
+        # Ornate border matching health color
+        pg.draw.rect(self.screen, health_color, (health_bar_x, health_bar_y, health_bar_width, health_bar_height), 3, border_radius=2)
+        pg.draw.rect(self.screen, tuple(int(c * 0.6) for c in health_color), (health_bar_x, health_bar_y, health_bar_width, health_bar_height), 1, border_radius=2)
+        # Label and health text - positioned above bar to match mana/attack style
+        self.draw_text("HP", 14, WHITE, health_bar_x + 30, health_bar_y - 18)
         health_text = f"{int(self.player.hearts)}/{int(self.player.max_hearts)}"
-        self.draw_text(health_text, 14, (0, 255, 255), health_bar_x + health_bar_width + 10, health_bar_y - 2)
+        self.draw_text(health_text, 14, health_color, health_bar_x + health_bar_width - 80, health_bar_y - 18)
         
         # Draw kill streak if active
         if self.kill_streak > 1:
             streak_color = YELLOW if self.kill_streak < 5 else (255, 165, 0)  # Orange for high streaks
-            self.draw_text("STREAK: " + str(self.kill_streak) + "x", 22, streak_color, WIDTH/2, 40)
+            self.draw_text("STREAK: " + str(self.kill_streak) + "x", 24, streak_color, WIDTH/2, 40)
+        
+        # Draw powerup indicators below mana bar (left side, stacked)
+        powerup_y = 60  # Below mana bar
+        powerup_x = 25
         
         # Draw shield indicator if active
         if self.player.shield_active:
             shield_text = f"SHIELD: {self.player.shield_time // 10}s"
-            self.draw_text(shield_text, 20, (100, 150, 255), WIDTH/2, 10)
+            self.draw_text(shield_text, 18, (100, 150, 255), powerup_x, powerup_y)
+            powerup_y += 25
         
         # Draw damage boost indicator if active
         if self.player.damage_boost_active:
             damage_text = f"DAMAGE x{self.player.damage_boost_mult}: {self.player.damage_boost_time // 10}s"
-            self.draw_text(damage_text, 16, (255, 50, 50), WIDTH * 0.25, 10)
+            self.draw_text(damage_text, 18, (255, 50, 50), powerup_x, powerup_y)
+            powerup_y += 25
         
         # Draw speed boost indicator if active
         if self.player.speed_boost_active:
             speed_text = f"SPEED x{self.player.speed_mult_boost}: {self.player.speed_boost_time // 10}s"
-            self.draw_text(speed_text, 16, (255, 200, 0), WIDTH * 0.75, 10)
+            self.draw_text(speed_text, 18, (255, 200, 0), powerup_x, powerup_y)
+            powerup_y += 25
         
         # Draw combo indicator if player is attacking with combo
         if self.player.attack_combo > 1 and self.player.attacking:
@@ -1006,17 +1144,31 @@ class Game:
         
         # Draw attack energy bar (top right)
         bar_width = 200
-        bar_height = 20
+        bar_height = 24
         bar_x = WIDTH - bar_width - 20
         bar_y = 20
-        # Background (dark gray)
-        pg.draw.rect(self.screen, (50, 50, 50), (bar_x, bar_y, bar_width, bar_height))
-        # Energy fill (orange/yellow - distinct from mana blue)
+        # Background gradient effect with dark rounded corners
+        pg.draw.rect(self.screen, (30, 30, 35), (bar_x - 2, bar_y - 2, bar_width + 4, bar_height + 4), border_radius=3)
+        pg.draw.rect(self.screen, (40, 40, 45), (bar_x, bar_y, bar_width, bar_height), border_radius=2)
+        # Energy fill with gradient color based on level
         energy_width = int((self.player.attack_energy / self.player.max_attack_energy) * bar_width)
-        pg.draw.rect(self.screen, (255, 165, 0), (bar_x, bar_y, energy_width, bar_height))
-        # Border
-        pg.draw.rect(self.screen, (255, 255, 255), (bar_x, bar_y, bar_width, bar_height), 2)
-        self.draw_text("ATTACK ENERGY", 14, (255, 165, 0), bar_x - 120, bar_y + 3)
+        if energy_width > 0:
+            # Use gradient colors: orange when low, yellow when high
+            energy_percent = self.player.attack_energy / self.player.max_attack_energy
+            if energy_percent < 0.33:
+                fill_color = (200, 100, 0)
+            elif energy_percent < 0.66:
+                fill_color = (255, 140, 0)
+            else:
+                fill_color = (255, 180, 0)
+            pg.draw.rect(self.screen, fill_color, (bar_x + 1, bar_y + 1, energy_width - 2, bar_height - 2), border_radius=1)
+        # Ornate border
+        pg.draw.rect(self.screen, (255, 200, 0), (bar_x, bar_y, bar_width, bar_height), 3, border_radius=2)
+        pg.draw.rect(self.screen, (200, 150, 0), (bar_x, bar_y, bar_width, bar_height), 1, border_radius=2)
+        # Label and stats - positioned above bar with better spacing
+        self.draw_text("ATTACK", 14, (255, 180, 0), bar_x + 30, bar_y - 18)
+        energy_text = f"{int(self.player.attack_energy)}/{int(self.player.max_attack_energy)}"
+        self.draw_text(energy_text, 14, (255, 180, 0), bar_x + bar_width - 80, bar_y - 18)
         
         # Draw pause screen overlay
         if self.paused:
@@ -1031,19 +1183,32 @@ class Game:
             self.draw_text("Press ESC to Resume", 24, WHITE, WIDTH / 2, HEIGHT / 2 + 20)
         
         # Draw mana bar
-        mana_bar_width = 150
-        mana_bar_height = 15
-        mana_bar_x = 10
-        mana_bar_y = 10
-        # Background
-        pg.draw.rect(self.screen, (50, 50, 50), (mana_bar_x, mana_bar_y, mana_bar_width, mana_bar_height))
-        # Mana (blue)
+        mana_bar_width = 180
+        mana_bar_height = 24
+        mana_bar_x = 20
+        mana_bar_y = 20
+        # Background gradient effect with dark rounded corners
+        pg.draw.rect(self.screen, (30, 30, 40), (mana_bar_x - 2, mana_bar_y - 2, mana_bar_width + 4, mana_bar_height + 4), border_radius=3)
+        pg.draw.rect(self.screen, (40, 40, 50), (mana_bar_x, mana_bar_y, mana_bar_width, mana_bar_height), border_radius=2)
+        # Mana fill with gradient color based on level
         mana_width = int((self.player.mana / self.player.max_mana) * mana_bar_width)
-        pg.draw.rect(self.screen, (0, 100, 255), (mana_bar_x, mana_bar_y, mana_width, mana_bar_height))
-        # Border
-        pg.draw.rect(self.screen, (255, 255, 255), (mana_bar_x, mana_bar_y, mana_bar_width, mana_bar_height), 2)
-        # Mana text
-        self.draw_text("MANA: " + str(int(self.player.mana)), 16, WHITE, mana_bar_x + mana_bar_width + 50, mana_bar_y + 5)
+        if mana_width > 0:
+            # Use gradient colors: dark blue when low, bright cyan when high
+            mana_percent = self.player.mana / self.player.max_mana
+            if mana_percent < 0.33:
+                mana_color = (0, 80, 200)
+            elif mana_percent < 0.66:
+                mana_color = (0, 150, 255)
+            else:
+                mana_color = (0, 200, 255)
+            pg.draw.rect(self.screen, mana_color, (mana_bar_x + 1, mana_bar_y + 1, mana_width - 2, mana_bar_height - 2), border_radius=1)
+        # Ornate border
+        pg.draw.rect(self.screen, (0, 180, 255), (mana_bar_x, mana_bar_y, mana_bar_width, mana_bar_height), 3, border_radius=2)
+        pg.draw.rect(self.screen, (0, 120, 200), (mana_bar_x, mana_bar_y, mana_bar_width, mana_bar_height), 1, border_radius=2)
+        # Label and stats - positioned above bar like attack bar
+        self.draw_text("MANA", 14, (100, 180, 255), mana_bar_x + 30, mana_bar_y - 18)
+        mana_text = f"{int(self.player.mana)}/{int(self.player.max_mana)}"
+        self.draw_text(mana_text, 14, (0, 200, 255), mana_bar_x + mana_bar_width - 80, mana_bar_y - 18)
         
         # Draw monster health bar on boss levels
         if self.level % 5 == 0 and len(monster_arr) > 0:
@@ -1106,6 +1271,7 @@ class Game:
         return show_save_quit_dialog(self, title=title, message=message)
 
 
+# Start the game
 g = Game()
 while g.running:
     choice = g.show_start_screen()

@@ -96,5 +96,6 @@ def show_upgrade_screen(game):
                         apply_upgrade(game, upgrades[i][1])
                         waiting = False
                 if save_quit_rect.collidepoint((mx, my)):
+                    game.save_game()
                     game.exit_now()
                     waiting = False

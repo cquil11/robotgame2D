@@ -336,11 +336,11 @@ def show_pause_screen(game):
                             waiting = False
 
         # Draw overlay and pause text while waiting
-        overlay = pg.Surface((WIDTH, HEIGHT))
+        overlay = pg.Surface((WIDTH, WINDOW_HEIGHT))
         overlay.set_alpha(180)
         overlay.fill((0, 0, 0))
         game.screen.blit(overlay, (0, 0))
-        draw_text(game, "PAUSED", 64, WHITE, WIDTH / 2, HEIGHT / 2 - 120)
+        draw_text(game, "PAUSED", 64, WHITE, WIDTH / 2, WINDOW_HEIGHT / 2 - 120)
         # buttons
         draw_button(game, "Resume", resume_rect, (80, 120, 200), (120, 160, 240), text_size=22)
         draw_button(game, "Save & Quit", savequit_rect, (80, 160, 80), (120, 220, 120), text_size=20)
@@ -409,25 +409,25 @@ def show_level_complete(game):
             waiting = True
             while waiting:
                 # create buttons: Continue, Save & Quit, Quit (define every frame)
-                cont_rect = pg.Rect(WIDTH/2 - 260, HEIGHT/2 + 120, 180, 48)
-                save_rect = pg.Rect(WIDTH/2 - 10, HEIGHT/2 + 120, 200, 48)
-                quit_rect = pg.Rect(WIDTH/2 + 220, HEIGHT/2 + 120, 160, 48)
+                cont_rect = pg.Rect(WIDTH/2 - 260, WINDOW_HEIGHT/2 + 120, 180, 48)
+                save_rect = pg.Rect(WIDTH/2 - 10, WINDOW_HEIGHT/2 + 120, 200, 48)
+                quit_rect = pg.Rect(WIDTH/2 + 220, WINDOW_HEIGHT/2 + 120, 160, 48)
                 game.clock.tick(FPS)
                 # Draw menu background and stats/buttons every frame
                 game.screen.fill(BLACK)
                 completed_level = max(1, game.level - 1)
-                draw_text(game, "LEVEL " + str(completed_level) + " COMPLETE!", 56, GREEN, WIDTH/2, HEIGHT/2 - 120)
+                draw_text(game, "LEVEL " + str(completed_level) + " COMPLETE!", 56, GREEN, WIDTH/2, WINDOW_HEIGHT/2 - 120)
                 if game.damage_taken_this_level == 0:
-                    draw_text(game, "PERFECT CLEAR! +1000", 32, (255, 215, 0), WIDTH/2, HEIGHT/2 - 80)
-                draw_text(game, "Level: " + str(completed_level), 26, WHITE, WIDTH/2, HEIGHT/2 - 50)
+                    draw_text(game, "PERFECT CLEAR! +1000", 32, (255, 215, 0), WIDTH/2, WINDOW_HEIGHT/2 - 80)
+                draw_text(game, "Level: " + str(completed_level), 26, WHITE, WIDTH/2, WINDOW_HEIGHT/2 - 50)
                 if game.max_streak > 0:
-                    draw_text(game, "Best Streak: " + str(game.max_streak) + "x", 24, YELLOW, WIDTH/2, HEIGHT/2 - 20)
+                    draw_text(game, "Best Streak: " + str(game.max_streak) + "x", 24, YELLOW, WIDTH/2, WINDOW_HEIGHT/2 - 20)
                 if game.accuracy_attempts > 0:
                     accuracy = int((game.accuracy_hits / game.accuracy_attempts) * 100)
                     acc_color = GREEN if accuracy >= 70 else YELLOW if accuracy >= 50 else WHITE
-                    draw_text(game, "Accuracy: " + str(accuracy) + "%", 24, acc_color, WIDTH/2, HEIGHT/2 + 10)
-                draw_text(game, "Enemies Defeated: " + str(game.total_kills), 24, WHITE, WIDTH/2, HEIGHT/2 + 40)
-                draw_text(game, "Press ENTER for Level " + str(game.level), 26, WHITE, WIDTH/2, HEIGHT/2 + 40)
+                    draw_text(game, "Accuracy: " + str(accuracy) + "%", 24, acc_color, WIDTH/2, WINDOW_HEIGHT/2 + 10)
+                draw_text(game, "Enemies Defeated: " + str(game.total_kills), 24, WHITE, WIDTH/2, WINDOW_HEIGHT/2 + 40)
+                draw_text(game, "Press ENTER for Level " + str(game.level), 26, WHITE, WIDTH/2, WINDOW_HEIGHT/2 + 40)
                 draw_button(game, "Continue", cont_rect, (80, 120, 200), (120, 160, 240), text_size=18)
                 draw_button(game, "Save & Quit", save_rect, (80, 160, 80), (120, 220, 120), text_size=16)
                 draw_button(game, "Quit", quit_rect, (160, 80, 80), (220, 120, 120), text_size=16)
@@ -540,18 +540,19 @@ def show_instructions_screen(game):
         game.clock.tick(FPS)
         game.screen.fill(BLACK)
         
-        # Gradient background
-        for i in range(HEIGHT):
-            shade = int(20 + (i / HEIGHT) * 40)
+        # Gradient background using full window height
+        for i in range(WINDOW_HEIGHT):
+            shade = int(20 + (i / WINDOW_HEIGHT) * 40)
             pg.draw.line(game.screen, (shade, shade, shade + 20), (0, i), (WIDTH, i))
         
-        draw_text(game, "HOW TO PLAY", 56, GREEN, WIDTH/2, 40)
+        draw_text(game, "HOW TO PLAY", 56, GREEN, WIDTH/2, 30)
         
         instructions = [
             "MOVEMENT: Use arrow keys or WASD to move left/right",
             "JUMP: Press SPACEBAR or W to jump",
             "ATTACK: Left-click to sword attack (builds combo)",
-            "FIREBALL: Right-click to cast fireball (costs mana)",
+            "FIREBALL: Press F to cast fireball (costs 15 mana)",
+            "SHIELD: Right-click to activate protective shield (costs 20 mana)",
             "",
             "GOAL: Defeat all enemies to advance to next level",
             "UPGRADES: Choose stat upgrades after completing levels",
@@ -564,14 +565,14 @@ def show_instructions_screen(game):
             "Press ENTER to return to menu"
         ]
         
-        y = 120
+        y = 110
         for line in instructions:
             if line == "":
                 y += 15
             else:
                 color = YELLOW if line.startswith("GOAL") or line.startswith("UPGRADES") or line.startswith("BOSS") else WHITE
                 draw_text(game, line, 18, color, WIDTH/2, y)
-                y += 30
+                y += 28
         
         pg.display.flip()
         

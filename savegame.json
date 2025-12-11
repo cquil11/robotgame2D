@@ -1,0 +1,13 @@
+{
+  "level": 2,
+  "score": 2366,
+  "player": {
+    "max_hearts": 100,
+    "hearts": 47.0,
+    "max_mana": 100,
+    "mana": 100,
+    "attack_power": 1,
+    "speed_mult": 1.0,
+    "max_combo": 5
+  }
+}
