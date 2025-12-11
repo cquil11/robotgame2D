@@ -10,7 +10,7 @@ try:
 except Exception:
     MIXER_OK = False
 
-TITLE = "ROBOT GAME"
+TITLE = "CRIMSON KNIGHT"
 WIDTH = 800
 HEIGHT = 600
 UI_PANEL_HEIGHT = 80

@@ -66,6 +66,10 @@ class Player(pg.sprite.Sprite):
         self.speed_boost_active = False
         self.speed_boost_time = 0
         self.speed_mult_boost = 1.0
+        # Manual shield activation
+        self.shield_max_duration = 90  # 3 seconds at 30 FPS
+        self.shield_cooldown = 0
+        self.shield_cooldown_max = 180  # 6 seconds cooldown
 
     def jump(self):
         # only jump if on platform
@@ -186,6 +190,10 @@ class Player(pg.sprite.Sprite):
         if self.fireball_cooldown > 0:
             self.fireball_cooldown -= 1
         
+        # Shield cooldown
+        if self.shield_cooldown > 0:
+            self.shield_cooldown -= 1
+        
         # Reset consecutive hits if not attacking for more than 1.5 seconds
         if pg.time.get_ticks() - self.last_attack_time > 1500:
             self.consecutive_hits = 0
@@ -238,6 +246,15 @@ class Player(pg.sprite.Sprite):
             self.fireball_cooldown = 30  # 1 second cooldown at 30 FPS
             return Fireball(self.game, self.rect.center, target_pos)
         return None
+    
+    def activate_shield(self):
+        """Activate shield to block projectiles and reduce damage"""
+        if self.shield_cooldown == 0 and not self.shield_active:
+            self.shield_active = True
+            self.shield_time = self.shield_max_duration
+            self.shield_cooldown = self.shield_cooldown_max
+            return True
+        return False
     
     def get_attack_rect(self):
         """Returns the hitbox for sword attack - width matches player model"""

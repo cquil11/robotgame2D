@@ -1,61 +1,37 @@
-"""Highscore management for the game."""
+"""Highscore management functions."""
 import json
 from os import path
-import os
 
 
-def load_highscores(dir_path='.'):
-    """Load highscores from file, return list of (name, score) tuples."""
+def load_highscores(scores_dir='.'):
+    """Load highscores from JSON file."""
     try:
-        # Ensure directory exists
-        if not path.exists(dir_path):
-            dir_path = '.'
-        highscores_path = path.join(dir_path, 'highscores.json')
-        with open(highscores_path, 'r') as f:
+        scores_path = path.join(scores_dir, 'highscores.json')
+        with open(scores_path, 'r') as f:
             data = json.load(f)
-            # Sort by score descending
-            scores = sorted(data.get('scores', []), key=lambda x: x['score'], reverse=True)
-            return scores[:5]  # Return top 5
+            return data.get('scores', [])
     except Exception:
         return []
 
 
-def save_highscores(scores, dir_path='.'):
-    """Save highscores to both JSON and legacy highscore.txt file."""
-    try:
-        # Ensure directory exists
-        if not path.exists(dir_path):
-            dir_path = '.'
-        
-        # Save to highscores.json
-        highscores_path = path.join(dir_path, 'highscores.json')
-        with open(highscores_path, 'w', encoding='utf-8') as f:
-            json.dump({'scores': scores}, f, indent=2)
-        print(f"[OK] Saved {len(scores)} scores to highscores.json")
-        
-        # Also save the top score to highscore.txt for backward compatibility
-        if scores and len(scores) > 0:
-            hs_txt_path = path.join(dir_path, 'highscore.txt')
-            with open(hs_txt_path, 'w', encoding='utf-8') as f:
-                f.write(str(scores[0]['score']))  # Write only the top score
-            print(f"[OK] Saved top score ({scores[0]['score']}) to highscore.txt")
-    except Exception as e:
-        print(f"[ERROR] Error saving highscores: {e}")
-
-
-def is_highscore(score, dir_path='.'):
-    """Check if score is in top 5."""
-    scores = load_highscores(dir_path)
-    if len(scores) < 5:
-        return True
-    return score > scores[-1]['score']
-
-
-def add_highscore(name, score, dir_path='.'):
-    """Add a new highscore and return updated list."""
-    scores = load_highscores(dir_path)
+def add_highscore(name, score, scores_dir='.'):
+    """Add a new highscore and save to JSON file."""
+    scores = load_highscores(scores_dir)
     scores.append({'name': name, 'score': score})
-    scores = sorted(scores, key=lambda x: x['score'], reverse=True)[:5]
-    save_highscores(scores, dir_path)
-    print(f"[OK] Added new highscore: {name} - {score}")
-    return scores
+    scores.sort(key=lambda x: x.get('score', 0), reverse=True)
+    scores = scores[:10]  # Keep only top 10
+    
+    try:
+        scores_path = path.join(scores_dir, 'highscores.json')
+        with open(scores_path, 'w') as f:
+            json.dump({'scores': scores}, f, indent=2)
+    except Exception:
+        pass
+
+
+def is_highscore(score, scores_dir='.'):
+    """Check if a score qualifies as a highscore (top 10)."""
+    scores = load_highscores(scores_dir)
+    if len(scores) < 10:
+        return True
+    return score > min(s.get('score', 0) for s in scores)

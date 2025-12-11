@@ -540,38 +540,65 @@ def show_instructions_screen(game):
         game.clock.tick(FPS)
         game.screen.fill(BLACK)
         
-        # Gradient background
-        for i in range(HEIGHT):
-            shade = int(20 + (i / HEIGHT) * 40)
+        # Gradient background using full window height
+        for i in range(WINDOW_HEIGHT):
+            shade = int(20 + (i / WINDOW_HEIGHT) * 40)
             pg.draw.line(game.screen, (shade, shade, shade + 20), (0, i), (WIDTH, i))
         
-        draw_text(game, "HOW TO PLAY", 56, GREEN, WIDTH/2, 40)
+        draw_text(game, "HOW TO PLAY", 64, GREEN, WIDTH/2, 50)
         
-        instructions = [
-            "MOVEMENT: Use arrow keys or WASD to move left/right",
-            "JUMP: Press SPACEBAR or W to jump",
-            "ATTACK: Left-click to sword attack (builds combo)",
-            "FIREBALL: Right-click to cast fireball (costs mana)",
-            "",
-            "GOAL: Defeat all enemies to advance to next level",
-            "UPGRADES: Choose stat upgrades after completing levels",
-            "BOSS LEVELS: Every 5th level has a powerful boss",
-            "",
-            "SCORING: Kill streak multiplies points",
-            "Perfect clear (no damage taken) = +1000 bonus",
-            "Elite enemies (golden) = 3x score and health",
-            "",
-            "Press ENTER to return to menu"
+        # Controls Section
+        draw_text(game, "CONTROLS", 40, YELLOW, WIDTH/2, 130)
+        controls = [
+            ("Arrow Keys / WASD", "Move left/right"),
+            ("SPACEBAR / W", "Jump"),
+            ("Left Click", "Sword Attack (hold for heavy attack)"),
+            ("Right Click", "Activate Shield (3s duration, 6s cooldown)"),
+            ("R or E", "Cast Fireball (costs 15 mana)"),
+            ("ESC", "Pause game"),
         ]
         
-        y = 120
-        for line in instructions:
-            if line == "":
-                y += 15
-            else:
-                color = YELLOW if line.startswith("GOAL") or line.startswith("UPGRADES") or line.startswith("BOSS") else WHITE
-                draw_text(game, line, 18, color, WIDTH/2, y)
-                y += 30
+        y = 180
+        for key, action in controls:
+            draw_text(game, f"{key}:", 20, (100, 200, 255), WIDTH/2 - 150, y)
+            draw_text(game, action, 20, WHITE, WIDTH/2 + 80, y)
+            y += 35
+        
+        # Gameplay Section
+        draw_text(game, "GAMEPLAY", 40, YELLOW, WIDTH/2, y + 20)
+        y += 70
+        
+        gameplay = [
+            "• Defeat all enemies to advance to the next level",
+            "• Collect hearts to restore health",
+            "• Collect coins for bonus points",
+            "• Choose stat upgrades after completing each level",
+            "• Every 5th level features a powerful boss battle",
+            "• Shield blocks all projectile damage (arrows & fireballs)",
+        ]
+        
+        for line in gameplay:
+            draw_text(game, line, 20, WHITE, WIDTH/2, y)
+            y += 35
+        
+        # Scoring Section
+        draw_text(game, "SCORING & BONUSES", 40, YELLOW, WIDTH/2, y + 20)
+        y += 70
+        
+        scoring = [
+            "• Build kill streaks to multiply your score",
+            "• Perfect clear (no damage) = +1,000 bonus points",
+            "• Elite enemies (golden) = 3x score and health",
+            "• Complete levels quickly for time bonuses",
+            "• Combo attacks increase damage and scoring",
+        ]
+        
+        for line in scoring:
+            draw_text(game, line, 20, WHITE, WIDTH/2, y)
+            y += 35
+        
+        # Footer
+        draw_text(game, "Press ENTER or ESC to return to menu", 22, (150, 255, 150), WIDTH/2, WINDOW_HEIGHT - 40)
         
         pg.display.flip()
         

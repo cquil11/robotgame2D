@@ -9,7 +9,7 @@ from os import path
 import os
 from datetime import datetime
 import json
-from upgrades import show_upgrade_screen, apply_upgrade
+from upgrades import show_upgrade_screen
 from ui_dialogs import show_boss_warning, show_go_screen, show_confirm_dialog, show_save_quit_dialog
 from screens import show_start_screen, show_pause_screen, show_level_complete, draw_text, draw_button, draw_start_background
 from game_utils import save_game, exit_now, wait_for_key
@@ -30,7 +30,7 @@ class Game:
         except Exception:
             # If finalize_images isn't present or fails, continue without converting
             pass
-        pg.display.set_caption("My Game")
+        pg.display.set_caption("Crimson Knight")
         self.clock = pg.time.Clock()
         play_song('sounds/computer_startup.mp3')
         # Preload menu background(s).
@@ -110,8 +110,6 @@ class Game:
         self.time_bonus_active = True
         self.damage_taken_this_level = 0
         self.coin_count = 0
-        # Debug overlay for platform coordinates
-        self.debug_platform_lines = None
         # Flag used to ensure saved game is applied only once
         self.applied_saved_game = False
         # Delay after level complete before showing next screen (in ticks)
@@ -247,35 +245,6 @@ class Game:
         
         # Generate platforms for new level
         get_level_platforms(self.level)
-        # Debug: print platform count and source to console
-        try:
-            from settings import platform_arr, platform_source
-            print(f"Level {self.level}: {len(platform_arr)} platforms, source={platform_source}")
-        except Exception as e:
-            print(f"Level {self.level}: error getting platform info: {e}")
-        # Force level 1 platform layout here to avoid any unexpected overrides
-        if self.level == 1:
-            from settings import platform_arr as _plat_arr_ref, platform_source as _plat_src_ref
-            try:
-                _plat_arr_ref.clear()
-                _plat_arr_ref.extend([
-                    [0, HEIGHT - 90, 260, 20, 2],
-                    [300, HEIGHT - 90, 180, 20, 2],
-                    [500, HEIGHT - 150, 260, 20, 2],
-                    [60, 320, 180, 20, 2],
-                    [120, 160, 150, 20, 2],
-                    [320, 280, 170, 20, 2],
-                    [360, 360, 120, 20, 2],
-                    [560, 300, 200, 20, 2],
-                ])
-                try:
-                    import settings
-                    settings.platform_source = "level1_forced_main"
-                except Exception:
-                    pass
-            except Exception:
-                pass
-        # Debug overlay removed; platforms render correctly on-screen
         
         # Preserve current player stats before recreating player
         prev_stats = None
@@ -776,15 +745,16 @@ class Game:
             # Remove bullets from game
             for bullet in hits_bullet:
                 bullet.kill()
-            # Apply damage only if player doesn't have shield
-            if not self.player.shield_active:
-                self.player.hearts -= 5
-                self.damage_taken_this_level += 5
+            # Shield blocks monster fireballs completely (no damage)
+            if self.player.shield_active:
+                # Shield successfully blocked the fireball
+                pass
+            else:
+                # No shield - take reduced damage
+                self.player.hearts -= 3  # Reduced from 5
+                self.damage_taken_this_level += 3
                 self.kill_streak = 0  # Reset streak on damage
                 death_sound_HIT.play()
-            else:
-                # Shield absorbs the hit
-                self.player.shield_active = False
             if self.player.hearts < 0:
                 pg.mixer.music.stop()
                 play_song('sounds/death_song.mp3')
@@ -793,19 +763,19 @@ class Game:
         elif hits_arrows:
             # Arrows from skeletons hit the player
             # hits_arrows is a list of Arrow instances (removed on hit)
-            total_damage = 0
-            for arrow in hits_arrows:
-                total_damage += getattr(arrow, 'damage', 4)
-            
-            # Apply damage only if player doesn't have shield
-            if not self.player.shield_active:
+            # Shield blocks arrows completely (no damage)
+            if self.player.shield_active:
+                # Shield successfully blocked all arrows
+                pass
+            else:
+                # No shield - take damage
+                total_damage = 0
+                for arrow in hits_arrows:
+                    total_damage += getattr(arrow, 'damage', 4)
                 self.player.hearts -= total_damage
                 self.damage_taken_this_level += total_damage
                 self.kill_streak = 0  # Reset streak on damage
                 death_sound_HIT.play()
-            else:
-                # Shield absorbs the hit
-                self.player.shield_active = False
             
             if self.player.hearts < 0:
                 pg.mixer.music.stop()
@@ -907,19 +877,26 @@ class Game:
                             self.player.jump()
                         except Exception:
                             pass
-            # Mouse buttons: left = sword attack, right = fireball
+                # Fireball hotkeys (R or E keys)
+                if not self.paused:
+                    if event.key in (pg.K_r, pg.K_e):
+                        mouse_pos = pg.mouse.get_pos()
+                        fireball = self.player.cast_fireball(mouse_pos)
+                        if fireball:
+                            self.fireballs.add(fireball)
+                            self.all_sprites.add(fireball)
+            # Mouse buttons: left = sword attack, right = shield
             if event.type == pg.MOUSEBUTTONDOWN and not self.paused:
                 if event.button == 1:  # Left mouse button -> melee hit
                     try:
                         self.player.hit()
                     except Exception:
                         pass
-                elif event.button == 3:  # Right mouse button -> cast fireball
-                    mouse_pos = pg.mouse.get_pos()
-                    fireball = self.player.cast_fireball(mouse_pos)
-                    if fireball:
-                        self.fireballs.add(fireball)
-                        self.all_sprites.add(fireball)
+                elif event.button == 3:  # Right mouse button -> activate shield
+                    try:
+                        self.player.activate_shield()
+                    except Exception:
+                        pass
 
     def draw(self):
         # game loop draw
@@ -934,6 +911,15 @@ class Game:
             self.screen.blit(overlay, (0, 0))
         
         self.all_sprites.draw(self.screen)
+        
+        # Draw shield visual effect if active
+        if self.player.shield_active:
+            shield_radius = 45
+            shield_alpha = int(80 + 60 * abs(pg.math.Vector2(0.5, 0).rotate(pg.time.get_ticks() * 0.5).x))
+            shield_surface = pg.Surface((shield_radius * 2, shield_radius * 2), pg.SRCALPHA)
+            pg.draw.circle(shield_surface, (100, 200, 255, shield_alpha), (shield_radius, shield_radius), shield_radius, 3)
+            pg.draw.circle(shield_surface, (150, 220, 255, shield_alpha // 2), (shield_radius, shield_radius), shield_radius - 5, 2)
+            self.screen.blit(shield_surface, (self.player.rect.centerx - shield_radius, self.player.rect.centery - shield_radius))
         
         # Draw bottom UI panel background (below the game area)
         ui_panel_height = 80
@@ -974,10 +960,13 @@ class Game:
             streak_color = YELLOW if self.kill_streak < 5 else (255, 165, 0)  # Orange for high streaks
             self.draw_text("STREAK: " + str(self.kill_streak) + "x", 22, streak_color, WIDTH/2, 40)
         
-        # Draw shield indicator if active
+        # Draw shield indicator if active or on cooldown
         if self.player.shield_active:
-            shield_text = f"SHIELD: {self.player.shield_time // 10}s"
-            self.draw_text(shield_text, 20, (100, 150, 255), WIDTH/2, 10)
+            shield_text = f"SHIELD ACTIVE: {self.player.shield_time // 30}s"
+            self.draw_text(shield_text, 20, (100, 200, 255), WIDTH/2, 10)
+        elif self.player.shield_cooldown > 0:
+            cooldown_text = f"Shield CD: {self.player.shield_cooldown // 30}s"
+            self.draw_text(cooldown_text, 16, (150, 150, 150), WIDTH - 100, 10)
         
         # Draw damage boost indicator if active
         if self.player.damage_boost_active:
@@ -1051,7 +1040,6 @@ class Game:
         
         # self.draw_lives(self.screen, 5, HEIGHT - 5, self.player.lives, pright)
         # *after* drawing everything, flip the display
-        # Debug overlay removed
         pg.display.flip()
 
     def show_start_screen(self):
