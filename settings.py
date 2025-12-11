@@ -19,6 +19,8 @@ FPS = 30
 FONT_NAME = 'courier new'
 hs_file = "highscore.txt"
 
+# Player sprite scaling
+PLAYER_SCALE = 1
 
 # Utility loaders with safe fallbacks
 def safe_load_image(pth, fallback_size=(64, 64)):
@@ -76,6 +78,12 @@ def load_knight_sprite_sheet(pth):
         frames['walk_left'] = mirror(frames['walk_right'])
         frames['jump_left'] = mirror(frames['jump_right'])
         frames['attack_left'] = mirror(frames['attack_right'])
+        
+        # Scale all frames by PLAYER_SCALE
+        if 'PLAYER_SCALE' in globals():
+            for key in frames:
+                frames[key] = [pg.transform.scale(f, (int(f.get_width() * PLAYER_SCALE), int(f.get_height() * PLAYER_SCALE))) for f in frames[key]]
+        
         print(f"Knight frames sliced: idle={len(frames['idle_right'])}, walk={len(frames['walk_right'])}, jump={len(frames['jump_right'])}, attack={len(frames['attack_right'])}")
         return frames
     except Exception as e:
@@ -102,21 +110,30 @@ def safe_load_sound(pth):
         return DummySound()
 
 # IMAGES
-_knight_frames = load_knight_sprite_sheet('images/sprites/player/knight_sprite_sheet.png')
-pleft = safe_load_image('images/sprites/player/player_left.png') if not _knight_frames else _knight_frames['idle_left'][0]
-pright = safe_load_image('images/sprites/player/player_right.png') if not _knight_frames else _knight_frames['idle_right'][0]
-pleftj = safe_load_image('images/sprites/player/player_jump_left.png') if not _knight_frames else _knight_frames['jump_left'][0]
-prightj = safe_load_image('images/sprites/player/player_jump_right.png') if not _knight_frames else _knight_frames['jump_right'][0]
-plefth = safe_load_image('images/sprites/player/player_hit_left.png')
-prighth = safe_load_image('images/sprites/player/player_hit_right.png')
+# Disable sprite sheet - using individual PNG images
+_knight_frames = None
+
+# Helper to scale player sprites
+def scale_player_sprite(img):
+    if img:
+        w, h = img.get_size()
+        return pg.transform.scale(img, (int(w * PLAYER_SCALE), int(h * PLAYER_SCALE)))
+    return img
+
+pleft = scale_player_sprite(safe_load_image('images/sprites/player/player_left.png'))
+pright = scale_player_sprite(safe_load_image('images/sprites/player/player_right.png'))
+pleftj = scale_player_sprite(safe_load_image('images/sprites/player/player_jump_left.png'))
+prightj = scale_player_sprite(safe_load_image('images/sprites/player/player_jump_right.png'))
+plefth = scale_player_sprite(safe_load_image('images/sprites/player/player_hit_left.png'))
+prighth = scale_player_sprite(safe_load_image('images/sprites/player/player_hit_right.png'))
 
 # Attack animation frames
-attack_normal_right = [safe_load_image(f'images/sprites/player/player_attack_normal_right_{i}.png') for i in range(3)]
-attack_normal_left = [safe_load_image(f'images/sprites/player/player_attack_normal_left_{i}.png') for i in range(3)]
-attack_critical_right = [safe_load_image(f'images/sprites/player/player_attack_critical_right_{i}.png') for i in range(3)]
-attack_critical_left = [safe_load_image(f'images/sprites/player/player_attack_critical_left_{i}.png') for i in range(3)]
-attack_heavy_right = [safe_load_image(f'images/sprites/player/player_attack_heavy_right_{i}.png') for i in range(4)]
-attack_heavy_left = [safe_load_image(f'images/sprites/player/player_attack_heavy_left_{i}.png') for i in range(4)]
+attack_normal_right = [scale_player_sprite(safe_load_image(f'images/sprites/player/player_attack_normal_right_{i}.png')) for i in range(3)]
+attack_normal_left = [scale_player_sprite(safe_load_image(f'images/sprites/player/player_attack_normal_left_{i}.png')) for i in range(3)]
+attack_critical_right = [scale_player_sprite(safe_load_image(f'images/sprites/player/player_attack_critical_right_{i}.png')) for i in range(3)]
+attack_critical_left = [scale_player_sprite(safe_load_image(f'images/sprites/player/player_attack_critical_left_{i}.png')) for i in range(3)]
+attack_heavy_right = [scale_player_sprite(safe_load_image(f'images/sprites/player/player_attack_heavy_right_{i}.png')) for i in range(4)]
+attack_heavy_left = [scale_player_sprite(safe_load_image(f'images/sprites/player/player_attack_heavy_left_{i}.png')) for i in range(4)]
 
 # IMAGES - end of game UI and sprites
 end_background = safe_load_image('images/backgrounds/game_over.png')

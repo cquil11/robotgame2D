@@ -155,16 +155,13 @@ class Player(pg.sprite.Sprite):
                 if self.attack_frame >= total_frames:
                     self.attack_frame = total_frames - 1  # Stay on last frame
             
-            # Set the appropriate animation frame (prefer knight sheet if available)
-            if _knight_frames:
-                frames = _knight_frames['attack_right'] if self.facing_right else _knight_frames['attack_left']
-            else:
-                if self.attack_type == 'heavy':
-                    frames = attack_heavy_right if self.facing_right else attack_heavy_left
-                elif self.attack_type == 'critical':
-                    frames = attack_critical_right if self.facing_right else attack_critical_left
-                else:  # normal
-                    frames = attack_normal_right if self.facing_right else attack_normal_left
+            # Set the appropriate animation frame
+            if self.attack_type == 'heavy':
+                frames = attack_heavy_right if self.facing_right else attack_heavy_left
+            elif self.attack_type == 'critical':
+                frames = attack_critical_right if self.facing_right else attack_critical_left
+            else:  # normal
+                frames = attack_normal_right if self.facing_right else attack_normal_left
             
             if self.attack_frame < len(frames):
                 self.image = frames[self.attack_frame]
@@ -218,35 +215,19 @@ class Player(pg.sprite.Sprite):
                 speed_multiplier = self.speed_mult * self.speed_mult_boost if self.speed_boost_active else self.speed_mult
                 self.acc.x = -PLAYER_ACC * speed_multiplier
                 self.facing_right = False
-                if _knight_frames:
-                    # Use sprite-sheet idle/jump frames
-                    self.image = (_knight_frames['walk_left'][self.anim_index % len(_knight_frames['walk_left'])]
-                                  if self.vel.y >= 0 else _knight_frames['jump_left'][0])
-                else:
-                    if self.vel.y >= 0:
-                        self.image = pleft
-                    if self.vel.y < 0:
-                        self.image = pleftj
+                if self.vel.y >= 0:
+                    self.image = pleft
+                if self.vel.y < 0:
+                    self.image = pleftj
             if keys[pg.K_RIGHT] | keys[pg.K_d]:
                 # Apply player's speed multiplier and speed boost
                 speed_multiplier = self.speed_mult * self.speed_mult_boost if self.speed_boost_active else self.speed_mult
                 self.acc.x = PLAYER_ACC * speed_multiplier
                 self.facing_right = True
-                if _knight_frames:
-                    self.image = (_knight_frames['walk_right'][self.anim_index % len(_knight_frames['walk_right'])]
-                                  if self.vel.y >= 0 else _knight_frames['jump_right'][0])
-                else:
-                    if self.vel.y >= 0:
-                        self.image = pright
-                    if self.vel.y < 0:
-                        self.image = prightj
-
-            # If no horizontal input, show idle frame from sheet
-            if _knight_frames and not (keys[pg.K_LEFT] | keys[pg.K_a] | keys[pg.K_RIGHT] | keys[pg.K_d]):
-                idle_key = 'idle_right' if self.facing_right else 'idle_left'
-                idle_frames = _knight_frames[idle_key]
-                if idle_frames:
-                    self.image = idle_frames[self.anim_index % len(idle_frames)]
+                if self.vel.y >= 0:
+                    self.image = pright
+                if self.vel.y < 0:
+                    self.image = prightj
 
             # slows player down over time
             self.acc.x += self.vel.x * PLAYER_FRICTION

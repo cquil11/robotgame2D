@@ -1,9 +1,9 @@
 {
-  "level": 2,
-  "score": 2366,
+  "level": 3,
+  "score": 7439,
   "player": {
     "max_hearts": 100,
-    "hearts": 47.0,
+    "hearts": 90,
     "max_mana": 100,
     "mana": 100,
     "attack_power": 1,
