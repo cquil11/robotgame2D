@@ -11,8 +11,9 @@ except Exception:
     MIXER_OK = False
 
 TITLE = "CRIMSON KNIGHT"
-WIDTH = 800
-HEIGHT = 600
+WIDTH = 800  # Screen width
+HEIGHT = 600  # Screen height
+LEVEL_WIDTH = 2400  # Total level width (3x screen width for scrolling)
 UI_PANEL_HEIGHT = 80
 WINDOW_HEIGHT = HEIGHT + UI_PANEL_HEIGHT  # 680 total for windowed display
 FPS = 30
@@ -203,18 +204,33 @@ def get_level_platforms(level):
     # Level-specific seeds for consistent but varied layouts
     random.seed(level * 1000 + level)
     
-    # Level 1: Special beginner-friendly layout
+    # Level 1: Special winding side-scrolling layout
     if level == 1:
-        # Layout tuned to match the provided screenshot (positions approximate for 800x600)
-        platform_arr.append([0, HEIGHT - 90, 260, 20, 2])            # ground left
-        platform_arr.append([300, HEIGHT - 90, 180, 20, 2])          # ground center
-        platform_arr.append([500, HEIGHT - 150, 260, 20, 2])         # low right pad
-        platform_arr.append([60, 320, 180, 20, 2])                   # mid-left
-        platform_arr.append([120, 160, 150, 20, 2])                  # top-left
-        platform_arr.append([320, 280, 170, 20, 2])                  # mid-center
-        platform_arr.append([360, 360, 120, 20, 2])                  # lower-center
-        platform_arr.append([560, 300, 200, 20, 2])                  # mid-right (player start area)
-        platform_source = "level1_custom"
+        # Create a winding path from left to right across LEVEL_WIDTH (2400px)
+        # Ground floor platforms
+        platform_arr.append([0, HEIGHT - 90, 300, 20, 2])
+        platform_arr.append([350, HEIGHT - 90, 250, 20, 2])
+        platform_arr.append([650, HEIGHT - 90, 200, 20, 2])
+        # Mid-level platforms (staggered heights)
+        platform_arr.append([200, HEIGHT - 180, 180, 20, 2])
+        platform_arr.append([450, HEIGHT - 240, 200, 20, 2])
+        platform_arr.append([750, HEIGHT - 200, 180, 20, 2])
+        # Upper platforms
+        platform_arr.append([100, HEIGHT - 320, 150, 20, 2])
+        platform_arr.append([350, HEIGHT - 380, 180, 20, 2])
+        platform_arr.append([600, HEIGHT - 340, 200, 20, 2])
+        # Continue to right side
+        platform_arr.append([900, HEIGHT - 90, 250, 20, 2])
+        platform_arr.append([1200, HEIGHT - 160, 200, 20, 2])
+        platform_arr.append([1050, HEIGHT - 280, 180, 20, 2])
+        platform_arr.append([1300, HEIGHT - 380, 200, 20, 2])
+        # Final section
+        platform_arr.append([1550, HEIGHT - 90, 250, 20, 2])
+        platform_arr.append([1850, HEIGHT - 180, 200, 20, 2])
+        platform_arr.append([1700, HEIGHT - 300, 180, 20, 2])
+        platform_arr.append([2000, HEIGHT - 240, 250, 20, 2])
+        platform_arr.append([2150, HEIGHT - 90, 250, 20, 3])  # End platform
+        platform_source = "level1_scrolling"
         return
     
     # Choose a layout pattern based on level
@@ -232,129 +248,142 @@ def get_level_platforms(level):
         return
         
     # For non-boss levels, use pattern rotating through 10 designs
-    # level 2/12 -> pattern 1, level 3/13 -> pattern 2, etc.
+    # All patterns now use LEVEL_WIDTH (2400px) for scrolling gameplay
     pattern = (level - 1) % 10
     
     if pattern == 0:
-        # STAIRCASE LEFT - platforms ascending from left to right
-        platform_arr.append([20, HEIGHT - 80, 180, 20, 2])
-        platform_arr.append([220, HEIGHT - 160, 160, 20, 2])
-        platform_arr.append([400, HEIGHT - 240, 140, 20, 2])
-        platform_arr.append([560, HEIGHT - 320, 120, 20, 2])
-        platform_arr.append([100, HEIGHT - 400, 150, 20, 2])
-        platform_arr.append([450, HEIGHT - 480, 180, 20, 2])
-        platform_source = "pattern_0"
+        # STAIRCASE ASCENT - climbing platforms left to right
+        platform_arr.append([0, HEIGHT - 90, 280, 20, 2])
+        platform_arr.append([350, HEIGHT - 160, 250, 20, 2])
+        platform_arr.append([700, HEIGHT - 230, 220, 20, 2])
+        platform_arr.append([100, HEIGHT - 320, 200, 20, 2])
+        platform_arr.append([450, HEIGHT - 400, 200, 20, 2])
+        platform_arr.append([850, HEIGHT - 480, 200, 20, 2])
+        # Continue to right side
+        platform_arr.append([1100, HEIGHT - 90, 280, 20, 2])
+        platform_arr.append([1450, HEIGHT - 160, 250, 20, 2])
+        platform_arr.append([1800, HEIGHT - 230, 220, 20, 2])
+        platform_arr.append([1200, HEIGHT - 320, 200, 20, 2])
+        platform_arr.append([1550, HEIGHT - 400, 200, 20, 2])
+        platform_arr.append([1950, HEIGHT - 480, 200, 20, 2])
+        platform_arr.append([2100, HEIGHT - 90, 300, 20, 3])
+        platform_source = "pattern_0_scroll"
         
     elif pattern == 1:
-        # STAIRCASE RIGHT - platforms descending from left to right
-        platform_arr.append([20, HEIGHT - 480, 160, 20, 2])
-        platform_arr.append([200, HEIGHT - 400, 140, 20, 2])
-        platform_arr.append([360, HEIGHT - 320, 150, 20, 2])
-        platform_arr.append([530, HEIGHT - 240, 140, 20, 2])
-        platform_arr.append([150, HEIGHT - 160, 180, 20, 2])
-        platform_arr.append([550, HEIGHT - 80, 180, 20, 2])
-        platform_source = "pattern_1"
+        # WAVE PATTERN - undulating platforms
+        platform_arr.append([0, HEIGHT - 100, 250, 20, 2])
+        platform_arr.append([300, HEIGHT - 250, 220, 20, 2])
+        platform_arr.append([600, HEIGHT - 350, 200, 20, 2])
+        platform_arr.append([950, HEIGHT - 280, 200, 20, 2])
+        platform_arr.append([1300, HEIGHT - 150, 220, 20, 2])
+        platform_arr.append([1600, HEIGHT - 320, 200, 20, 2])
+        platform_arr.append([1950, HEIGHT - 200, 220, 20, 2])
+        platform_arr.append([2100, HEIGHT - 90, 300, 20, 3])
+        platform_source = "pattern_1_scroll"
         
     elif pattern == 2:
-        # PILLARS - tall vertical columns of platforms
-        platform_arr.append([80, HEIGHT - 80, 100, 20, 2])
-        platform_arr.append([80, HEIGHT - 200, 100, 20, 2])
-        platform_arr.append([80, HEIGHT - 320, 100, 20, 2])
-        platform_arr.append([350, HEIGHT - 140, 100, 20, 2])
-        platform_arr.append([350, HEIGHT - 260, 100, 20, 2])
-        platform_arr.append([350, HEIGHT - 380, 100, 20, 2])
-        platform_arr.append([620, HEIGHT - 80, 100, 20, 2])
-        platform_arr.append([620, HEIGHT - 200, 100, 20, 2])
-        platform_arr.append([620, HEIGHT - 320, 100, 20, 2])
-        platform_source = "pattern_2"
+        # VERTICAL TOWERS - tall column challenges
+        platform_arr.append([50, HEIGHT - 90, 180, 20, 2])
+        platform_arr.append([50, HEIGHT - 200, 180, 20, 2])
+        platform_arr.append([50, HEIGHT - 310, 180, 20, 2])
+        platform_arr.append([400, HEIGHT - 120, 180, 20, 2])
+        platform_arr.append([400, HEIGHT - 250, 180, 20, 2])
+        platform_arr.append([400, HEIGHT - 380, 180, 20, 2])
+        platform_arr.append([850, HEIGHT - 90, 180, 20, 2])
+        platform_arr.append([850, HEIGHT - 200, 180, 20, 2])
+        platform_arr.append([1300, HEIGHT - 120, 180, 20, 2])
+        platform_arr.append([1300, HEIGHT - 280, 180, 20, 2])
+        platform_arr.append([1750, HEIGHT - 90, 180, 20, 2])
+        platform_arr.append([1750, HEIGHT - 210, 180, 20, 2])
+        platform_arr.append([2100, HEIGHT - 90, 300, 20, 3])
+        platform_source = "pattern_2_scroll"
         
     elif pattern == 3:
-        # PYRAMID - platforms form a pyramid shape
-        platform_arr.append([320, HEIGHT - 80, 160, 20, 2])
-        platform_arr.append([200, HEIGHT - 180, 120, 20, 2])
-        platform_arr.append([480, HEIGHT - 180, 120, 20, 2])
-        platform_arr.append([100, HEIGHT - 280, 100, 20, 2])
-        platform_arr.append([350, HEIGHT - 280, 100, 20, 2])
-        platform_arr.append([600, HEIGHT - 280, 100, 20, 2])
-        platform_arr.append([250, HEIGHT - 380, 80, 20, 2])
-        platform_arr.append([470, HEIGHT - 380, 80, 20, 2])
-        platform_arr.append([360, HEIGHT - 480, 80, 20, 2])
-        platform_source = "pattern_3"
+        # NARROW PASSAGE - tight, challenging platforming
+        platform_arr.append([0, HEIGHT - 90, 220, 20, 2])
+        platform_arr.append([320, HEIGHT - 180, 180, 20, 2])
+        platform_arr.append([600, HEIGHT - 120, 200, 20, 2])
+        platform_arr.append([900, HEIGHT - 280, 160, 20, 2])
+        platform_arr.append([1150, HEIGHT - 150, 180, 20, 2])
+        platform_arr.append([1450, HEIGHT - 300, 170, 20, 2])
+        platform_arr.append([1750, HEIGHT - 140, 180, 20, 2])
+        platform_arr.append([2000, HEIGHT - 230, 200, 20, 2])
+        platform_arr.append([2100, HEIGHT - 90, 300, 20, 3])
+        platform_source = "pattern_3_scroll"
         
     elif pattern == 4:
-        # ZIGZAG - alternating left-right platforms
-        platform_arr.append([50, HEIGHT - 80, 200, 20, 2])
-        platform_arr.append([550, HEIGHT - 160, 200, 20, 2])
-        platform_arr.append([50, HEIGHT - 240, 200, 20, 2])
-        platform_arr.append([550, HEIGHT - 320, 200, 20, 2])
-        platform_arr.append([250, HEIGHT - 400, 200, 20, 2])
-        platform_arr.append([50, HEIGHT - 480, 150, 20, 2])
-        platform_arr.append([600, HEIGHT - 480, 150, 20, 2])
-        platform_source = "pattern_4"
+        # WIDE OPEN - fewer, larger platforms
+        platform_arr.append([0, HEIGHT - 100, 380, 20, 2])
+        platform_arr.append([500, HEIGHT - 200, 350, 20, 2])
+        platform_arr.append([1000, HEIGHT - 150, 360, 20, 2])
+        platform_arr.append([1450, HEIGHT - 280, 340, 20, 2])
+        platform_arr.append([1900, HEIGHT - 100, 380, 20, 3])
+        platform_source = "pattern_4_scroll"
+        
+    elif pattern == 5:
+        # ZIGZAG JUMP - alternating heights and sides
+        platform_arr.append([0, HEIGHT - 90, 240, 20, 2])
+        platform_arr.append([350, HEIGHT - 200, 200, 20, 2])
+        platform_arr.append([650, HEIGHT - 100, 220, 20, 2])
+        platform_arr.append([950, HEIGHT - 260, 200, 20, 2])
+        platform_arr.append([1250, HEIGHT - 120, 220, 20, 2])
+        platform_arr.append([1550, HEIGHT - 280, 200, 20, 2])
+        platform_arr.append([1850, HEIGHT - 140, 230, 20, 2])
+        platform_arr.append([2100, HEIGHT - 90, 300, 20, 3])
+        platform_source = "pattern_5_scroll"
         
     elif pattern == 6:
-        # FLOATING ISLANDS - scattered small platforms
-        platform_arr.append([100, HEIGHT - 100, 90, 20, 2])
-        platform_arr.append([300, HEIGHT - 150, 80, 20, 2])
-        platform_arr.append([500, HEIGHT - 120, 85, 20, 2])
-        platform_arr.append([650, HEIGHT - 200, 90, 20, 2])
-        platform_arr.append([150, HEIGHT - 250, 100, 20, 2])
-        platform_arr.append([400, HEIGHT - 280, 75, 20, 2])
-        platform_arr.append([600, HEIGHT - 330, 80, 20, 2])
-        platform_arr.append([200, HEIGHT - 380, 90, 20, 2])
-        platform_arr.append([450, HEIGHT - 420, 85, 20, 2])
-        platform_arr.append([100, HEIGHT - 480, 100, 20, 2])
-        platform_arr.append([600, HEIGHT - 500, 95, 20, 2])
-        platform_source = "pattern_6"
+        # FLOATING ISLANDS - scattered platforms with gaps
+        platform_arr.append([50, HEIGHT - 100, 150, 20, 2])
+        platform_arr.append([300, HEIGHT - 200, 130, 20, 2])
+        platform_arr.append([600, HEIGHT - 140, 140, 20, 2])
+        platform_arr.append([900, HEIGHT - 280, 120, 20, 2])
+        platform_arr.append([1200, HEIGHT - 160, 140, 20, 2])
+        platform_arr.append([1500, HEIGHT - 300, 130, 20, 2])
+        platform_arr.append([1850, HEIGHT - 100, 140, 20, 2])
+        platform_arr.append([2100, HEIGHT - 90, 300, 20, 3])
+        platform_source = "pattern_6_scroll"
         
     elif pattern == 7:
-        # PARKOUR - challenging jumps with gaps
-        platform_arr.append([50, HEIGHT - 80, 140, 20, 2])
-        platform_arr.append([280, HEIGHT - 140, 100, 20, 2])
-        platform_arr.append([480, HEIGHT - 200, 90, 20, 2])
-        platform_arr.append([640, HEIGHT - 140, 110, 20, 2])
-        platform_arr.append([450, HEIGHT - 300, 100, 20, 2])
-        platform_arr.append([200, HEIGHT - 360, 120, 20, 2])
-        platform_arr.append([520, HEIGHT - 440, 90, 20, 2])
-        platform_arr.append([100, HEIGHT - 500, 130, 20, 2])
-        platform_source = "pattern_7"
+        # SPIRAL CLIMB - platforms spiral upward
+        platform_arr.append([0, HEIGHT - 90, 250, 20, 2])
+        platform_arr.append([350, HEIGHT - 180, 220, 20, 2])
+        platform_arr.append([700, HEIGHT - 280, 200, 20, 2])
+        platform_arr.append([1050, HEIGHT - 380, 180, 20, 2])
+        platform_arr.append([1400, HEIGHT - 320, 200, 20, 2])
+        platform_arr.append([1750, HEIGHT - 200, 220, 20, 2])
+        platform_arr.append([2100, HEIGHT - 90, 300, 20, 3])
+        platform_source = "pattern_7_scroll"
         
     elif pattern == 8:
-        # SPLIT ARENA - two separate sides with bridge
-        platform_arr.append([20, HEIGHT - 80, 280, 20, 2])
-        platform_arr.append([500, HEIGHT - 80, 280, 20, 2])
-        platform_arr.append([50, HEIGHT - 200, 180, 20, 2])
-        platform_arr.append([570, HEIGHT - 200, 180, 20, 2])
-        platform_arr.append([80, HEIGHT - 320, 140, 20, 2])
-        platform_arr.append([580, HEIGHT - 320, 140, 20, 2])
-        platform_arr.append([320, HEIGHT - 260, 160, 20, 2])  # Bridge
-        platform_arr.append([150, HEIGHT - 440, 120, 20, 2])
-        platform_arr.append([530, HEIGHT - 440, 120, 20, 2])
-        platform_source = "pattern_8"
+        # GAUNTLET - continuous challenging platforms
+        platform_arr.append([0, HEIGHT - 90, 180, 20, 2])
+        platform_arr.append([250, HEIGHT - 180, 170, 20, 2])
+        platform_arr.append([500, HEIGHT - 100, 180, 20, 2])
+        platform_arr.append([750, HEIGHT - 240, 160, 20, 2])
+        platform_arr.append([1000, HEIGHT - 130, 180, 20, 2])
+        platform_arr.append([1250, HEIGHT - 280, 170, 20, 2])
+        platform_arr.append([1500, HEIGHT - 120, 180, 20, 2])
+        platform_arr.append([1750, HEIGHT - 260, 170, 20, 2])
+        platform_arr.append([2000, HEIGHT - 100, 200, 20, 2])
+        platform_arr.append([2100, HEIGHT - 90, 300, 20, 3])
+        platform_source = "pattern_8_scroll"
         
-    elif pattern == 9:
-        # SPIRAL - platforms in a spiral pattern
-        platform_arr.append([350, HEIGHT - 80, 150, 20, 2])
-        platform_arr.append([550, HEIGHT - 160, 130, 20, 2])
-        platform_arr.append([600, HEIGHT - 280, 120, 20, 2])
-        platform_arr.append([450, HEIGHT - 380, 140, 20, 2])
-        platform_arr.append([250, HEIGHT - 440, 130, 20, 2])
-        platform_arr.append([80, HEIGHT - 360, 120, 20, 2])
-        platform_arr.append([50, HEIGHT - 240, 140, 20, 2])
-        platform_arr.append([150, HEIGHT - 120, 150, 20, 2])
-        platform_source = "pattern_9"
-        
-    else:
-        # RANDOM CHAOS - completely random placement
-        num_platforms = random.randint(9, 13)
-        for i in range(num_platforms):
-            x = random.randrange(20, WIDTH - 180)
-            y = random.randrange(HEIGHT - 500, HEIGHT - 60)
-            w = random.randrange(70, 200)
-            if x + w > WIDTH - 10:
-                w = WIDTH - x - 20
-            platform_arr.append([x, y, w, 20, 2])
-        platform_source = "pattern_random"
+    else:  # pattern == 9
+        # MAZE - complex winding path
+        platform_arr.append([0, HEIGHT - 90, 200, 20, 2])
+        platform_arr.append([300, HEIGHT - 180, 180, 20, 2])
+        platform_arr.append([150, HEIGHT - 270, 170, 20, 2])
+        platform_arr.append([450, HEIGHT - 200, 200, 20, 2])
+        platform_arr.append([750, HEIGHT - 150, 200, 20, 2])
+        platform_arr.append([600, HEIGHT - 280, 180, 20, 2])
+        platform_arr.append([1050, HEIGHT - 100, 200, 20, 2])
+        platform_arr.append([1350, HEIGHT - 220, 190, 20, 2])
+        platform_arr.append([1200, HEIGHT - 340, 170, 20, 2])
+        platform_arr.append([1600, HEIGHT - 150, 200, 20, 2])
+        platform_arr.append([1950, HEIGHT - 240, 190, 20, 2])
+        platform_arr.append([2100, HEIGHT - 90, 300, 20, 3])
+        platform_source = "pattern_9_scroll"
     
     # Reset random seed to not affect other random calls
     random.seed()

@@ -115,6 +115,9 @@ class Game:
         # Delay after level complete before showing next screen (in ticks)
         self.level_complete_delay = 0
         self.level_complete_delay_max = 0
+        # Camera system for scrolling
+        self.camera_x = 0
+        self.camera_y = 0
         self.load_data()
 
     def load_data(self):
@@ -304,7 +307,7 @@ class Game:
         """Spawn platforms, enemies, and items for the current level."""
         # Add monster only on every 5th level
         if self.level % 5 == 0:
-            mon = Monster(self, WIDTH / 2, 30)
+            mon = Monster(self, WIDTH / 2, 30, level=self.level)
             self.monster.add(mon)
             self.all_sprites.add(mon)
             monster_arr.append(mon)
@@ -312,29 +315,40 @@ class Game:
             # Mixed enemy spawns for variety - both goblins and skeletons from level 1
             total_enemies = min(8 + self.level * 2, 15)  # Scale up to 15 total
             
-            # Progressive difficulty - enemies get faster every 3 levels
-            difficulty_tier = (self.level - 1) // 3
-            speed_boost = 1.0 + (difficulty_tier * 0.15)  # 15% faster per tier
+            # Progressive difficulty - exponential scaling
+            # Level 1: 1.0x, Level 5: 1.4x, Level 10: 1.9x, Level 15: 2.4x
+            speed_boost = 1.0 + (self.level - 1) * 0.1  # 10% faster per level
+            health_mult = 1.0 + (self.level - 1) * 0.15  # 15% more health per level
             
             # Random mix ratio - more varied each level
             goblin_ratio = random.uniform(0.4, 0.7)  # 40-70% goblins
             num_goblins = int(total_enemies * goblin_ratio)
             num_skeletons = total_enemies - num_goblins
             
-            # Spawn goblins
+            # Spawn goblins (mix of normal and fast variants at higher levels)
             for i in range(num_goblins):
                 # 10% chance for elite (golden) goblin on level 3+
                 is_elite = self.level >= 3 and random.random() < 0.1
-                goblin = Goblin(self, is_elite=is_elite, speed_mult=speed_boost)
+                # 20% chance for fast goblin variant on level 5+
+                if self.level >= 5 and random.random() < 0.2:
+                    from sprites import FastGoblin
+                    goblin = FastGoblin(self, level=self.level)
+                else:
+                    goblin = Goblin(self, is_elite=is_elite, speed_mult=speed_boost, level=self.level)
                 self.all_sprites.add(goblin)
                 self.goblins.add(goblin)
                 goblins_arr.append(goblin)
             
-            # Spawn skeletons (from level 1 now)
+            # Spawn skeletons (mix of normal and archer variants at higher levels)
             for i in range(num_skeletons):
                 # 10% chance for elite (golden) skeleton on level 3+
                 is_elite = self.level >= 3 and random.random() < 0.1
-                skeleton = Skeleton(self, is_elite=is_elite, speed_mult=speed_boost)
+                # 20% chance for archer skeleton variant on level 7+
+                if self.level >= 7 and random.random() < 0.2:
+                    from sprites import ArcherSkeleton
+                    skeleton = ArcherSkeleton(self, level=self.level)
+                else:
+                    skeleton = Skeleton(self, is_elite=is_elite, speed_mult=speed_boost, level=self.level)
                 self.all_sprites.add(skeleton)
                 self.skeletons.add(skeleton)
                 skel_arr.append(skeleton)
@@ -364,12 +378,26 @@ class Game:
             p = Platform(self, *plat)
             self.all_sprites.add(p)
             self.platforms.add(p)
-        bottom_lava = Lava(0, HEIGHT - 40, 800, 20)
+        # Lava spans entire level width
+        from settings import LEVEL_WIDTH
+        bottom_lava = Lava(0, HEIGHT - 40, LEVEL_WIDTH, 20)
         self.all_sprites.add(bottom_lava)
         self.lava.add(bottom_lava)
         self.level_started = True  # Level is now ready for completion checking
         self.run()
 
+    def update_camera(self):
+        """Update camera to follow player with smooth scrolling"""
+        # Camera follows player horizontally
+        target_x = self.player.rect.centerx - WIDTH // 2
+        # Clamp camera to level bounds
+        from settings import LEVEL_WIDTH
+        target_x = max(0, min(target_x, LEVEL_WIDTH - WIDTH))
+        # Smooth camera movement
+        self.camera_x += (target_x - self.camera_x) * 0.1
+        # Keep camera Y fixed (no vertical scrolling)
+        self.camera_y = 0
+    
     def run(self):
         # game loops
         self.playing = True
@@ -382,6 +410,8 @@ class Game:
 
     def update(self):
         self.score += 1
+        # Update camera to follow player
+        self.update_camera()
         # Only spawn monster bullets if monster exists (every 5th level)
         if self.level % 5 == 0 and len(monster_arr) > 0:
             # Boss shoots more frequently as the level progresses
@@ -854,6 +884,24 @@ class Game:
                 plat_top = hits_plat[0].collision_rect.top if hasattr(hits_plat[0], 'collision_rect') else hits_plat[0].rect.top
                 self.player.pos.y = plat_top
                 self.player.vel.y = 0
+                # Unlock advanced mechanics at specific levels
+                self.player.double_jump_available = self.level >= 5
+                self.player.air_dash_available = self.level >= 8
+                self.player.ground_pound_available = self.level >= 10
+        
+        # Handle ground pound charging and slam
+        if self.player.ground_pound_charging:
+            self.player.ground_pound_timer -= 1
+            if self.player.ground_pound_timer <= 0:
+                # Time to slam - trigger on landing
+                hits_plat = pg.sprite.spritecollide(self.player, self.platforms, False)
+                if hits_plat:
+                    self.player.do_ground_pound_slam()
+                    self.player.ground_pound_charging = False
+        
+        # Update air dash cooldown
+        if self.player.air_dash_cooldown > 0:
+            self.player.air_dash_cooldown -= 1
 
     def events(self):
         # game loop events
@@ -875,6 +923,25 @@ class Game:
                     if event.key == pg.K_SPACE or event.key == pg.K_w or event.key == pg.K_UP:
                         try:
                             self.player.jump()
+                            # Double jump support (unlocked at level 5)
+                            if self.level >= 5:
+                                self.player.double_jump()
+                        except Exception:
+                            pass
+                # Air dash - Q key (unlocked at level 8)
+                if not self.paused:
+                    if event.key == pg.K_q and self.level >= 8:
+                        try:
+                            # Dash in direction player is facing
+                            dash_dir = 1 if self.player.facing_right else -1
+                            self.player.air_dash(dash_dir)
+                        except Exception:
+                            pass
+                # Ground pound - X key (unlocked at level 10)
+                if not self.paused:
+                    if event.key == pg.K_x and self.level >= 10:
+                        try:
+                            self.player.ground_pound()
                         except Exception:
                             pass
                 # Fireball hotkeys (R or E keys)
@@ -910,16 +977,20 @@ class Game:
             overlay.fill((255, 0, 0))
             self.screen.blit(overlay, (0, 0))
         
-        self.all_sprites.draw(self.screen)
+        # Draw all sprites with camera offset
+        for sprite in self.all_sprites:
+            self.screen.blit(sprite.image, (sprite.rect.x - self.camera_x, sprite.rect.y - self.camera_y))
         
-        # Draw shield visual effect if active
+        # Draw shield visual effect if active (with camera offset)
         if self.player.shield_active:
             shield_radius = 45
             shield_alpha = int(80 + 60 * abs(pg.math.Vector2(0.5, 0).rotate(pg.time.get_ticks() * 0.5).x))
             shield_surface = pg.Surface((shield_radius * 2, shield_radius * 2), pg.SRCALPHA)
             pg.draw.circle(shield_surface, (100, 200, 255, shield_alpha), (shield_radius, shield_radius), shield_radius, 3)
             pg.draw.circle(shield_surface, (150, 220, 255, shield_alpha // 2), (shield_radius, shield_radius), shield_radius - 5, 2)
-            self.screen.blit(shield_surface, (self.player.rect.centerx - shield_radius, self.player.rect.centery - shield_radius))
+            screen_x = self.player.rect.centerx - shield_radius - self.camera_x
+            screen_y = self.player.rect.centery - shield_radius - self.camera_y
+            self.screen.blit(shield_surface, (screen_x, screen_y))
         
         # Draw bottom UI panel background (below the game area)
         ui_panel_height = 80

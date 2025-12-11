@@ -1,6 +1,6 @@
 # player and enemy classes for game
 import settings
-from settings import WIDTH, HEIGHT, FPS, FONT_NAME, hs_file, BLACK, WHITE, RED, GREEN, BLUE, YELLOW
+from settings import WIDTH, HEIGHT, LEVEL_WIDTH, FPS, FONT_NAME, hs_file, BLACK, WHITE, RED, GREEN, BLUE, YELLOW
 from settings import goblins_arr, coin_arr, skel_arr, player_arr, monster_arr
 from settings import PLAYER_ACC, PLAYER_FRICTION, PLAYER_GRAV, PLAYER_JUMP
 from settings import platform_layer, lava_layer, player_layer, mob_layer, coin_layer, projectile_layer, monster_layer, particle_layer, powerup_layer
@@ -35,7 +35,8 @@ class Player(pg.sprite.Sprite):
         self.max_combo = 5
         self.attack_power = 1
         self.speed_mult = 1.0
-        self.pos = vec(WIDTH /2, HEIGHT / 2)
+        # Start player on the left side for scrolling levels
+        self.pos = vec(200, HEIGHT / 2)
         self.vel = vec(0, 0)
         self.acc = vec(0, 0)
         self.lives = 3
@@ -70,6 +71,14 @@ class Player(pg.sprite.Sprite):
         self.shield_max_duration = 90  # 3 seconds at 30 FPS
         self.shield_cooldown = 0
         self.shield_cooldown_max = 180  # 6 seconds cooldown
+        # New advanced mechanics (unlocked at level 5)
+        self.double_jump_available = False  # Starts at level 5
+        self.air_dash_available = False    # Starts at level 8
+        self.ground_pound_available = False  # Starts at level 10
+        self.double_jump_count = 0  # Track double jumps (0 = ground, 1 = used)
+        self.air_dash_cooldown = 0  # Cooldown between dashes
+        self.ground_pound_charging = False
+        self.ground_pound_timer = 0
 
     def jump(self):
         # only jump if on platform
@@ -80,6 +89,62 @@ class Player(pg.sprite.Sprite):
             jump_sound.play()
             self.vel.y = PLAYER_JUMP
             self.image = pright
+            self.double_jump_count = 0  # Reset double jump when landing
+
+    def double_jump(self):
+        """Double jump - jump again while in air (unlocked at level 5)"""
+        if self.double_jump_available and self.double_jump_count == 0:
+            jump_sound.play()
+            self.vel.y = PLAYER_JUMP * 0.85  # Slightly less powerful than ground jump
+            self.double_jump_count = 1
+            self.image = pright
+
+    def air_dash(self, direction):
+        """Air dash - dash horizontally while in air (unlocked at level 8)"""
+        if self.air_dash_available and self.air_dash_cooldown <= 0:
+            # Dash speed
+            dash_speed = 12
+            self.vel.x = dash_speed * direction
+            self.air_dash_cooldown = 20  # Cooldown between dashes (20 frames = 0.67s)
+            # Visual feedback - play jump sound
+            jump_sound.play()
+
+    def ground_pound(self):
+        """Ground pound - jump and slam down for damage (unlocked at level 10)"""
+        if self.ground_pound_available and not self.ground_pound_charging:
+            self.ground_pound_charging = True
+            self.ground_pound_timer = 15  # Charge time
+            # Jump upward for pound
+            self.vel.y = PLAYER_JUMP * 1.2
+
+    def do_ground_pound_slam(self):
+        """Execute the ground pound slam"""
+        # Damage all enemies in range
+        slam_radius = 80
+        slam_damage = 3
+        
+        # Check collision with enemies
+        for goblin in self.game.goblins:
+            dist = math.sqrt((goblin.rect.centerx - self.rect.centerx)**2 + 
+                           (goblin.rect.centery - self.rect.centery)**2)
+            if dist < slam_radius:
+                goblin.take_damage(slam_damage)
+                # Knockback effect
+                goblin.vel.y = -10
+                goblin.vel.x = (goblin.rect.centerx - self.rect.centerx) / 10
+        
+        for skeleton in self.game.skeletons:
+            dist = math.sqrt((skeleton.rect.centerx - self.rect.centerx)**2 + 
+                           (skeleton.rect.centery - self.rect.centery)**2)
+            if dist < slam_radius:
+                skeleton.take_damage(slam_damage)
+                # Knockback effect
+                skeleton.vel.y = -10
+                skeleton.vel.x = (skeleton.rect.centerx - self.rect.centerx) / 10
+        
+        # Knockback player slightly upward
+        self.vel.y = -8
+        explosion_sound.play()
 
     def hit(self):
         sword_swing.play()
@@ -231,11 +296,12 @@ class Player(pg.sprite.Sprite):
         self.vel += self.acc
         self.pos += self.vel + 0.5 * self.acc
 
-        # wrap around screen
-        if self.pos.x > WIDTH:
-            self.pos.x = 0
+        # Clamp to level boundaries instead of wrapping
+        from settings import LEVEL_WIDTH
+        if self.pos.x > LEVEL_WIDTH:
+            self.pos.x = LEVEL_WIDTH
         if self.pos.x < 0:
-            self.pos.x = WIDTH
+            self.pos.x = 0
 
         self.rect.midbottom = self.pos
     
@@ -348,7 +414,7 @@ class Platform(pg.sprite.Sprite):
 
 
 class Monster(pg.sprite.Sprite):
-    def __init__(self, game, x, y):
+    def __init__(self, game, x, y, level=1):
         pg.sprite.Sprite.__init__(self)
         self.game = game
         # Use the generated scary monster sprite
@@ -360,8 +426,10 @@ class Monster(pg.sprite.Sprite):
         # Boss flies around the entire map - both horizontal and vertical
         self.vx = random.choice([-6, -4, 4, 6])  # Faster horizontal movement
         self.vy = random.choice([-3, -2, 2, 3])  # Add vertical movement
-        self.health = 60  # Increased from 50 to 60 HP
-        self.max_health = 60
+        # Scale health by level: base 60 + level scaling
+        base_health = 60
+        self.health = int(base_health * (1.0 + (level - 1) * 0.25))  # 25% more health per level
+        self.max_health = self.health
         # Create a smaller hitbox for player damage (just the moving box part)
         # The monster image is 128x128, the actual moving box is roughly in the middle
         self.damage_hitbox = pg.Rect(0, 0, 60, 60)  # Smaller hitbox for the box
@@ -446,6 +514,221 @@ class Monster(pg.sprite.Sprite):
         pg.draw.rect(screen, (0, 200, 0), (bar_x, bar_y, health_width, bar_height))
         # Border
         pg.draw.rect(screen, (255, 255, 255), (bar_x, bar_y, bar_width, bar_height), 2)
+
+
+class FastGoblin(pg.sprite.Sprite):
+    """Faster, more aggressive goblin variant. Bounces higher and attacks more frequently."""
+    def __init__(self, game, level=1):
+        pg.sprite.Sprite.__init__(self)
+        self.game = game
+        self._layer = mob_layer
+        self.image_left = gleft
+        self.image_right = gright
+        self.image = gleft
+        self.is_elite = False
+        self.rect = self.image.get_rect()
+        # Fast goblins are significantly faster
+        self.vx = random.choice([-6, 6]) * (1.0 + (level - 1) * 0.1)
+        self.vy = 0
+        self.on_ground = False
+        # Less health but faster attacks
+        self.health = int(3 * (1.0 + (level - 1) * 0.1))
+        self.max_health = self.health
+        self.jump_cooldown = 0
+        self.attacking = False
+        self.attack_timer = 0
+        self.attack_cooldown = 20  # More frequent attacks (was ~60 normally)
+        self.attack_range = 25
+        self.attack_type = 'none'
+        self.walk_frame = 0
+        self.walk_timer = 0
+        self.stuck_counter = 0
+        self.last_x = 0
+        self.frozen = False
+        self.frozen_time = 0
+        
+        # Place on platform
+        available_platforms = []
+        player_spawn_x = WIDTH / 2
+        player_spawn_y = HEIGHT / 2
+        
+        for idx, plat in enumerate(settings.platform_arr):
+            plat_x = plat[0]
+            plat_y = plat[1]
+            plat_w = plat[2]
+            if abs((plat_x + plat_w/2) - player_spawn_x) < 150 and abs(plat_y - player_spawn_y) < 100:
+                continue
+            available_platforms.append(idx)
+        
+        if len(available_platforms) > 0:
+            i = random.choice(available_platforms)
+        else:
+            i = 0
+        
+        y_pos = int(settings.platform_arr[i][1] - 30)
+        x_start = int(settings.platform_arr[i][0])
+        x_end = int(min(settings.platform_arr[i][0] + settings.platform_arr[i][2] - 20, WIDTH - 20))
+        if x_end <= x_start:
+            x_pos = x_start
+        else:
+            x_pos = random.randrange(x_start, x_end)
+        self.rect.x = x_pos
+        self.rect.y = y_pos
+        self.spawn_platform = settings.platform_arr[i]
+    
+    def update(self):
+        """Update fast goblin - faster movement and attacks"""
+        if self.frozen:
+            self.frozen_time -= 1
+            if self.frozen_time <= 0:
+                self.frozen = False
+            return
+        
+        # Apply gravity
+        self.vy += PLAYER_GRAV
+        self.rect.y += self.vy
+        self.rect.x += self.vx
+        
+        # Platform collisions
+        hits = pg.sprite.spritecollide(self, self.game.platforms, False)
+        if self.vy > 0:
+            self.vy = 0
+            self.on_ground = True
+            self.rect.bottom = hits[0].rect.top
+        if self.vy < 0:
+            self.vy = 0
+            self.rect.top = hits[0].rect.bottom if hits else self.rect.top
+        
+        if not hits:
+            self.on_ground = False
+        
+        # Jump more frequently
+        if self.on_ground and random.random() < 0.04:
+            self.vy = -15
+        
+        self.attack_cooldown -= 1
+    
+    def take_damage(self, damage=1):
+        self.health -= damage
+        if self.health <= 0:
+            goblin_death_sound.play()
+            self.kill()
+
+
+class ArcherSkeleton(pg.sprite.Sprite):
+    """Skeleton archer variant. Shoots faster and from farther away."""
+    def __init__(self, game, level=1):
+        pg.sprite.Sprite.__init__(self)
+        self.game = game
+        self._layer = mob_layer
+        self.image = sleft
+        self.rect = self.image.get_rect()
+        self.is_elite = False
+        # Slightly slower movement than normal skeleton
+        self.vx = 2.5 * (1.0 + (level - 1) * 0.1)
+        self.vy = 0
+        self.on_ground = False
+        self.jump_cooldown = 0
+        self.x_upper_bound = 0
+        # Same health scaling as normal skeleton
+        self.health = int(4 * (1.0 + (level - 1) * 0.15))
+        self.max_health = self.health
+        # Fast shooting - increased rate
+        self.shoot_timer = random.randint(20, 50)
+        self.shoot_range = 300  # Can shoot from farther away
+        self.walk_frame = 0
+        self.walk_timer = 0
+        self.shooting = False
+        self.shoot_frame = 0
+        
+        available_platforms = []
+        player_spawn_x = WIDTH / 2
+        player_spawn_y = HEIGHT / 2
+        
+        for idx, plat in enumerate(settings.platform_arr):
+            plat_x = plat[0]
+            plat_y = plat[1]
+            plat_w = plat[2]
+            if abs((plat_x + plat_w/2) - player_spawn_x) < 150 and abs(plat_y - player_spawn_y) < 100:
+                continue
+            if plat[4] > 0:
+                available_platforms.append(idx)
+        
+        if len(available_platforms) == 0:
+            for idx, plat in enumerate(settings.platform_arr):
+                plat_x = plat[0]
+                plat_y = plat[1]
+                plat_w = plat[2]
+                if abs((plat_x + plat_w/2) - player_spawn_x) < 150 and abs(plat_y - player_spawn_y) < 100:
+                    continue
+                available_platforms.append(idx)
+            i = random.choice(available_platforms) if len(available_platforms) > 0 else 0
+        else:
+            i = random.choice(available_platforms)
+            settings.platform_arr[i][4] = settings.platform_arr[i][4] - 1
+
+        y_pos = settings.platform_arr[i][1] - 30
+        x_pos = random.randrange(settings.platform_arr[i][0], settings.platform_arr[i][0] + settings.platform_arr[i][2] - 20)
+
+        self.x_lower_bound = settings.platform_arr[i][0]
+        self.x_upper_bound = settings.platform_arr[i][0] + settings.platform_arr[i][2] - 20
+        self.spawn_platform = settings.platform_arr[i]
+        self.rect.y = y_pos
+        self.rect.x = x_pos
+    
+    def update(self):
+        """Update archer skeleton - faster shooting"""
+        if self.frozen:
+            self.frozen_time -= 1
+            if self.frozen_time <= 0:
+                self.frozen = False
+            return
+        
+        # Apply gravity
+        self.vy += PLAYER_GRAV
+        self.rect.y += self.vy
+        
+        # Platform collisions
+        hits = pg.sprite.spritecollide(self, self.game.platforms, False)
+        if hits:
+            if self.vy >= 0:
+                self.vy = 0
+                self.on_ground = True
+                self.rect.bottom = hits[0].rect.top
+        else:
+            self.on_ground = False
+        
+        # Jump occasionally
+        if self.on_ground and random.random() < 0.02:
+            self.vy = -12
+        
+        # Move and keep on platform
+        if self.rect.x < self.x_lower_bound:
+            self.vx = 2.5
+        elif self.rect.x > self.x_upper_bound:
+            self.vx = -2.5
+        else:
+            if random.random() < 0.02:
+                self.vx *= -1
+        
+        self.rect.x += self.vx
+        
+        # Shooting behavior - more aggressive
+        self.shoot_timer -= 1
+        if self.shoot_timer <= 0 and self.on_ground:
+            player_pos = self.game.player.rect.centerx
+            distance = abs(player_pos - self.rect.centerx)
+            if distance < self.shoot_range:
+                arrow = Arrow(self.game, self.rect.centerx, self.rect.centery, player_pos)
+                self.game.all_sprites.add(arrow)
+                self.game.skeleton_arrows.add(arrow)
+                self.shoot_timer = random.randint(20, 50)
+    
+    def take_damage(self, damage=1):
+        self.health -= damage
+        if self.health <= 0:
+            skeleton_death_sound.play()
+            self.kill()
 
 
 class Fireball(pg.sprite.Sprite):
@@ -718,9 +1001,15 @@ class Lava(pg.sprite.Sprite):
     def __init__(self, x, y, w, h):
         pg.sprite.Sprite.__init__(self)
         self._layer = lava_layer
+        # Create a surface with the specified width and height
         self.image = pg.Surface((w, h))
-        self.rect = self.image.get_rect()
-        self.image = lava
+        self.image.blit(lava, (0, 0))  # Blit the lava texture to fill the surface
+        # Tile the lava texture if needed to fill the width
+        tiles_needed = (w // lava.get_width()) + 1
+        for i in range(1, tiles_needed):
+            tile_x = i * lava.get_width()
+            if tile_x < w:
+                self.image.blit(lava, (tile_x, 0))
         self.rect = self.image.get_rect()
         self.rect.x = x
         self.rect.y = y
@@ -852,7 +1141,7 @@ class MonsterBullet(pg.sprite.Sprite):
 
 
 class Goblin(pg.sprite.Sprite):
-    def __init__(self, game, is_elite=False, speed_mult=1.0):
+    def __init__(self, game, is_elite=False, speed_mult=1.0, level=1):
         pg.sprite.Sprite.__init__(self)
         self.game = game
         self._layer = mob_layer
@@ -868,7 +1157,9 @@ class Goblin(pg.sprite.Sprite):
         self.vx = random.choice([-4, 4]) * elite_mult * speed_mult
         self.vy = 0
         self.on_ground = False
-        self.health = 5 if is_elite else 2  # Elite goblins take 5 hits
+        # Scale health by level: base 2 (or 5 for elite) + level bonus
+        base_health = 5 if is_elite else 2
+        self.health = int(base_health * (1.0 + (level - 1) * 0.15))
         self.max_health = self.health
         self.jump_cooldown = 0
         # Goblin attack system
@@ -1270,7 +1561,7 @@ class Goblin(pg.sprite.Sprite):
 
 
 class Skeleton(pg.sprite.Sprite):
-    def __init__(self, game, is_elite=False, speed_mult=1.0):
+    def __init__(self, game, is_elite=False, speed_mult=1.0, level=1):
         pg.sprite.Sprite.__init__(self)
         self.game = game
         self._layer = mob_layer
@@ -1285,7 +1576,9 @@ class Skeleton(pg.sprite.Sprite):
         self.on_ground = False  # Track if on platform
         self.jump_cooldown = 0  # Cooldown between jumps
         self.x_upper_bound = 0
-        self.health = 6 if is_elite else 3  # Elite skeletons take 6 hits
+        # Scale health by level: base 3 (or 6 for elite) + level bonus
+        base_health = 6 if is_elite else 3
+        self.health = int(base_health * (1.0 + (level - 1) * 0.15))
         self.max_health = self.health
         # Increase base cooldown to reduce firing frequency
         self.shoot_timer = random.randint(40, 90)  # frames until next possible shot - increased fire rate
