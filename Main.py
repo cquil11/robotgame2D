@@ -404,7 +404,7 @@ class Game:
             p = Platform(self, *plat)
             self.all_sprites.add(p)
             self.platforms.add(p)
-        bottom_lava = Lava(0, HEIGHT - 40, 800, 20)
+        bottom_lava = Lava(0, HEIGHT - 40, WIDTH, 20)
         self.all_sprites.add(bottom_lava)
         self.lava.add(bottom_lava)
         self.level_started = True  # Level is now ready for completion checking

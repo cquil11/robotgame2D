@@ -7,7 +7,7 @@ from settings import platform_layer, lava_layer, player_layer, mob_layer, coin_l
 from settings import pleft, pright, pleftj, prightj, plefth, prighth
 from settings import attack_normal_right, attack_normal_left, attack_critical_right, attack_critical_left
 from settings import attack_heavy_right, attack_heavy_left
-from settings import gleft, gright, sleft, sright
+from settings import gleft, gright, sleft, sright, skeleton_walk_0, skeleton_walk_1
 from settings import monster_scary, arrow_skeleton, platform_image, lava, coin, heart_image
 from settings import game_over_sound, death_sound, jump_sound, death_sound_HIT, lava_burning_sound, sword_swing
 from settings import scream_sound, coin_sound, explosion_sound, goblin_death_sound, skeleton_death_sound
@@ -844,9 +844,30 @@ class Lava(pg.sprite.Sprite):
     def __init__(self, x, y, w, h):
         pg.sprite.Sprite.__init__(self)
         self._layer = lava_layer
-        self.image = pg.Surface((w, h))
-        self.rect = self.image.get_rect()
-        self.image = lava
+        # Tile the lava texture horizontally (and vertically if needed) to fill the given area
+        base_img = lava
+        tile_w = base_img.get_width()
+        tile_h = base_img.get_height()
+        self.image = pg.Surface((int(w), int(h)), pg.SRCALPHA)
+
+        # Number of tiles needed across and down
+        num_tiles_x = int(w // tile_w) + 1
+        num_tiles_y = int(h // tile_h) + 1
+
+        for iy in range(num_tiles_y):
+            y_offset = iy * tile_h
+            for ix in range(num_tiles_x):
+                x_offset = ix * tile_w
+                # Determine the drawable region (crop on the last tile if it overflows)
+                draw_w = min(tile_w, int(w - x_offset))
+                draw_h = min(tile_h, int(h - y_offset))
+                if draw_w <= 0 or draw_h <= 0:
+                    continue
+                tile_surface = base_img
+                if draw_w != tile_w or draw_h != tile_h:
+                    tile_surface = base_img.subsurface(0, 0, draw_w, draw_h)
+                self.image.blit(tile_surface, (x_offset, y_offset))
+
         self.rect = self.image.get_rect()
         self.rect.x = x
         self.rect.y = y
@@ -865,7 +886,8 @@ class Coin(pg.sprite.Sprite):
         while j == 2:
             j = random.randrange(5)
 
-        y_pos = settings.platform_arr[j][1] - 15
+        # Lift coins higher off the platform surface for better visibility
+        y_pos = settings.platform_arr[j][1] - 32
         x_pos = random.randrange(settings.platform_arr[j][0], settings.platform_arr[j][0] + settings.platform_arr[j][2] - 10)
         self.rect.y = y_pos
         self.rect.x = x_pos
@@ -912,7 +934,8 @@ class Heart(pg.sprite.Sprite):
         # Place on a random platform
         if len(settings.platform_arr) > 0:
             plat_index = random.randrange(len(settings.platform_arr))
-            y_pos = settings.platform_arr[plat_index][1] - 25
+            # Raise hearts further above platforms for clarity
+            y_pos = settings.platform_arr[plat_index][1] - 40
             x_pos = random.randrange(settings.platform_arr[plat_index][0], 
                                      settings.platform_arr[plat_index][0] + settings.platform_arr[plat_index][2] - 20)
             self.rect.y = y_pos
@@ -1577,6 +1600,7 @@ class Skeleton(pg.sprite.Sprite):
         self.image = sleft
         self.rect = self.image.get_rect()
         self.is_elite = is_elite
+        self.facing_right = False
         # Elite enemies are faster and have more health
         # Progressive difficulty also increases speed
         elite_mult = 1.3 if is_elite else 1.0
@@ -1595,7 +1619,11 @@ class Skeleton(pg.sprite.Sprite):
         self.walk_timer = 0
         self.shooting = False
         self.shoot_frame = 0
-        # Skeleton is 20px wide and 30px tall
+        self.last_anim_x = self.rect.x  # track actual movement for animation gating
+        self.last_move_x = self.rect.x
+        self.stuck_counter = 0
+        self.last_anim_x = self.rect.x  # track actual movement for animation gating
+        # Spawn using actual sprite dimensions (scaled to 32x48 via settings)
         # Find a platform, but avoid player spawn platform (center of screen)
         available_platforms = []
         player_spawn_x = WIDTH / 2
@@ -1627,11 +1655,13 @@ class Skeleton(pg.sprite.Sprite):
             i = random.choice(available_platforms)
             settings.platform_arr[i][4] = settings.platform_arr[i][4] - 1
 
-        y_pos = settings.platform_arr[i][1] - 30
-        x_pos = random.randrange(settings.platform_arr[i][0], settings.platform_arr[i][0] + settings.platform_arr[i][2] - 20)
+        sprite_h = self.rect.height
+        sprite_w = self.rect.width
+        y_pos = settings.platform_arr[i][1] - sprite_h
+        x_pos = random.randrange(settings.platform_arr[i][0], settings.platform_arr[i][0] + settings.platform_arr[i][2] - sprite_w)
 
         self.x_lower_bound = settings.platform_arr[i][0]
-        self.x_upper_bound = settings.platform_arr[i][0] + settings.platform_arr[i][2] - 20
+        self.x_upper_bound = settings.platform_arr[i][0] + settings.platform_arr[i][2] - sprite_w
 
         self.spawn_platform = settings.platform_arr[i]
         self.rect.y = y_pos
@@ -1810,6 +1840,25 @@ class Skeleton(pg.sprite.Sprite):
                     elif player_x < skeleton_x and self.rect.left > on_platform.left + 10:
                         self.vx = -abs(self.vx) * 0.7  # Move toward left edge
         
+        # Apply horizontal movement
+        self.rect.x += self.vx
+
+        # Stuck detection: if not moving for a while, force a direction change
+        if abs(self.rect.x - self.last_move_x) < 0.5:
+            self.stuck_counter += 1
+        else:
+            self.stuck_counter = 0
+            self.last_move_x = self.rect.x
+
+        if self.stuck_counter > 30:
+            # Flip direction and nudge to break out
+            if self.vx == 0:
+                self.vx = random.choice([-3, 3])
+            else:
+                self.vx = -self.vx
+            self.rect.x += self.vx
+            self.stuck_counter = 0
+
         # Clamp to stay within bounds
         if self.rect.x < 0:
             self.rect.x = 0
@@ -1976,32 +2025,29 @@ class Skeleton(pg.sprite.Sprite):
         
         # Update sprite direction with walking animation (unless shooting)
         if not self.shooting:
-            if self.vx < 0:
+            moved = abs(self.rect.x - self.last_anim_x) > 0.5
+            if self.vx < -0.1 and moved:
+                self.facing_right = False
                 # Walking left - animate
                 self.walk_timer += 1
                 if self.walk_timer >= 10:
                     self.walk_timer = 0
                     self.walk_frame = 1 - self.walk_frame
-                if self.walk_frame == 1:
-                    try:
-                        self.image = pg.image.load('images/sprites/enemies/skeleton_walk_0.png')
-                    except:
-                        self.image = sleft
-                else:
-                    self.image = sleft
-            elif self.vx > 0:
+                self.image = skeleton_walk_0 if self.walk_frame == 1 else sleft
+            elif self.vx > 0.1 and moved:
+                self.facing_right = True
                 # Walking right - animate
                 self.walk_timer += 1
                 if self.walk_timer >= 10:
                     self.walk_timer = 0
                     self.walk_frame = 1 - self.walk_frame
-                if self.walk_frame == 1:
-                    try:
-                        self.image = pg.image.load('images/sprites/enemies/skeleton_walk_1.png')
-                    except:
-                        self.image = sright
-                else:
-                    self.image = sright
+                self.image = skeleton_walk_1 if self.walk_frame == 1 else sright
+            else:
+                # Idle: show facing frame, no animation
+                self.walk_timer = 0
+                self.walk_frame = 0
+                self.image = sright if self.facing_right else sleft
+            self.last_anim_x = self.rect.x
         
         # Shooting: fire arrows toward the player when in range
         if len(player_arr) > 0:

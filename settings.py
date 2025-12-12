@@ -11,16 +11,28 @@ except Exception:
     MIXER_OK = False
 
 TITLE = "CRIMSON KNIGHT"
-WIDTH = 800
-HEIGHT = 600
+WIDTH = 1280
+HEIGHT = 720
 UI_PANEL_HEIGHT = 80
-WINDOW_HEIGHT = HEIGHT + UI_PANEL_HEIGHT  # 680 total for windowed display
+WINDOW_HEIGHT = HEIGHT + UI_PANEL_HEIGHT  # 800 total for windowed display
 FPS = 30
 FONT_NAME = 'courier new'
 hs_file = "highscore.txt"
 
-# Player sprite scaling
-PLAYER_SCALE = 1
+# Global sprite scale (20x30 base -> 32x48 target)
+SPRITE_SCALE = 1.6
+PLAYER_SCALE = SPRITE_SCALE  # keep compatibility with any sheet-based scaling
+ENEMY_SCALE = SPRITE_SCALE   # default enemy scale
+SKELETON_SCALE = SPRITE_SCALE  # keep skeletons same size as player/goblin
+
+# Base logical sprite sizes before scaling
+BASE_PLAYER_SIZE = (20, 30)
+BASE_ENEMY_SIZE = (20, 30)
+BASE_LAVA_BALL_SIZE = (16, 16)
+BASE_COIN_SIZE = (12, 12)
+BASE_HEART_SIZE = (20, 20)
+BASE_ARROW_SIZE = (24, 8)
+BASE_MONSTER_SIZE = (80, 80)
 
 # Utility loaders with safe fallbacks
 def safe_load_image(pth, fallback_size=(64, 64)):
@@ -113,11 +125,25 @@ def safe_load_sound(pth):
 # Disable sprite sheet - using individual PNG images
 _knight_frames = None
 
-# Helper to scale player sprites to 20x30
+# Generic scaler using global scale factor
+def scale_with_factor(img, base_size):
+    if not img:
+        return img
+    target_w = int(base_size[0] * SPRITE_SCALE)
+    target_h = int(base_size[1] * SPRITE_SCALE)
+    return pg.transform.smoothscale(img, (target_w, target_h))
+
+# Skeleton-specific scaler (uses SKELETON_SCALE)
+def scale_skeleton(img, base_size=BASE_ENEMY_SIZE):
+    if not img:
+        return img
+    target_w = int(base_size[0] * SKELETON_SCALE)
+    target_h = int(base_size[1] * SKELETON_SCALE)
+    return pg.transform.smoothscale(img, (target_w, target_h))
+
+# Helper to scale player sprites to the default size (base 20x30 => 32x48)
 def scale_player_sprite(img):
-    if img:
-        return pg.transform.smoothscale(img, (20, 30))
-    return img
+    return scale_with_factor(img, BASE_PLAYER_SIZE)
 
 pleft = scale_player_sprite(safe_load_image('images/sprites/player/player_left.png'))
 pright = scale_player_sprite(safe_load_image('images/sprites/player/player_right.png'))
@@ -139,28 +165,38 @@ end_background = safe_load_image('images/backgrounds/game_over.png')
 level_background = safe_load_image('images/backgrounds/level_complete.png')
 platform_image = safe_load_image('images/ui/platform.png')
 lava = safe_load_image('images/ui/lava.png')
-lava_ball = pg.transform.smoothscale(safe_load_image('images/ui/lava_ball.png'), (16, 16))
-gleft = pg.transform.smoothscale(safe_load_image('images/sprites/enemies/Goblin2.png'), (20, 30))
-gright = pg.transform.smoothscale(safe_load_image('images/sprites/enemies/Goblin.png'), (20, 30))
-sleft = pg.transform.smoothscale(safe_load_image('images/sprites/enemies/skel_left.png'), (20, 30))
-sright = pg.transform.smoothscale(safe_load_image('images/sprites/enemies/skel_right.png'), (20, 30))
-coin = pg.transform.smoothscale(safe_load_image('images/ui/coin.png'), (12, 12))
-heart_image = pg.transform.smoothscale(safe_load_image('images/ui/heart.png'), (20, 20))
+lava_ball = scale_with_factor(safe_load_image('images/ui/lava_ball.png'), BASE_LAVA_BALL_SIZE)
+gleft = scale_with_factor(safe_load_image('images/sprites/enemies/Goblin2.png'), BASE_ENEMY_SIZE)
+gright = scale_with_factor(safe_load_image('images/sprites/enemies/Goblin.png'), BASE_ENEMY_SIZE)
+sleft = scale_skeleton(safe_load_image('images/sprites/enemies/skel_left.png'), BASE_ENEMY_SIZE)
+sright = scale_skeleton(safe_load_image('images/sprites/enemies/Skel_right.png'), BASE_ENEMY_SIZE)
+try:
+    skeleton_walk_0 = scale_skeleton(safe_load_image('images/sprites/enemies/skeleton_walk_0.png'), BASE_ENEMY_SIZE)
+except Exception:
+    skeleton_walk_0 = sleft
+try:
+    skeleton_walk_1 = scale_skeleton(safe_load_image('images/sprites/enemies/skeleton_walk_1.png'), BASE_ENEMY_SIZE)
+except Exception:
+    skeleton_walk_1 = sright
+coin = scale_with_factor(safe_load_image('images/ui/coin.png'), BASE_COIN_SIZE)
+heart_image = scale_with_factor(safe_load_image('images/ui/heart.png'), BASE_HEART_SIZE)
 
 # Optional new generated sprites (fall back to defaults if missing)
 try:
-    monster_scary = pg.transform.smoothscale(pg.image.load('images/sprites/monsters/monster_scary.png'), (80, 80))
+    monster_scary = scale_with_factor(pg.image.load('images/sprites/monsters/monster_scary.png'), BASE_MONSTER_SIZE)
 except Exception:
-    # Fallback: create a simple red circle
-    monster_scary = pg.Surface((80, 80), pg.SRCALPHA)
-    pg.draw.circle(monster_scary, (200, 50, 50), (40, 40), 35)
+    # Fallback: create a simple red circle, then scale it too
+    monster_scary = pg.Surface(BASE_MONSTER_SIZE, pg.SRCALPHA)
+    pg.draw.circle(monster_scary, (200, 50, 50), (BASE_MONSTER_SIZE[0] // 2, BASE_MONSTER_SIZE[1] // 2), BASE_MONSTER_SIZE[0] // 2 - 5)
+    monster_scary = scale_with_factor(monster_scary, BASE_MONSTER_SIZE)
 
 try:
-    arrow_skeleton = pg.transform.smoothscale(pg.image.load('images/sprites/enemies/arrow_skeleton.png'), (24, 8))
+    arrow_skeleton = scale_with_factor(pg.image.load('images/sprites/enemies/arrow_skeleton.png'), BASE_ARROW_SIZE)
 except Exception:
-    # create a tiny surface fallback
-    arrow_skeleton = pg.Surface((24, 8), pg.SRCALPHA)
+    # create a tiny surface fallback, then scale it too
+    arrow_skeleton = pg.Surface(BASE_ARROW_SIZE, pg.SRCALPHA)
     arrow_skeleton.fill((120, 80, 40))
+    arrow_skeleton = scale_with_factor(arrow_skeleton, BASE_ARROW_SIZE)
 
 # Optional animation frames for arrows (not currently generated)
 arrow_skeleton_frames = []
@@ -231,7 +267,8 @@ def play_song(song_name):
 PLAYER_ACC = 0.9
 PLAYER_FRICTION = -0.13
 PLAYER_GRAV = 0.8
-PLAYER_JUMP = -15
+# Slightly higher jump to handle wider 1280x720 gaps
+PLAYER_JUMP = -18
 
 # enemy property
 BOSS_ACC = 0.5
@@ -274,22 +311,22 @@ def get_level_platforms(level):
     if level == 1:
         # Extra wide ground platforms to cover lava completely
         platform_arr.append([0, HEIGHT - 90, WIDTH, 20, 2])          # full-width ground covering lava
-        platform_arr.append([60, 320, 180, 20, 2])                   # mid-left
-        platform_arr.append([120, 160, 150, 20, 2])                  # top-left
-        platform_arr.append([320, 280, 170, 20, 2])                  # mid-center
-        platform_arr.append([360, 360, 120, 20, 2])                  # lower-center
-        platform_arr.append([560, 300, 200, 20, 2])                  # mid-right
+        platform_arr.append([100, 380, 280, 20, 2])                  # mid-left
+        platform_arr.append([190, 190, 240, 20, 2])                  # top-left
+        platform_arr.append([510, 340, 270, 20, 2])                  # mid-center
+        platform_arr.append([575, 430, 190, 20, 2])                  # lower-center
+        platform_arr.append([895, 360, 320, 20, 2])                  # mid-right
         platform_source = "level1_safe"
         return
     
     if level == 2:
         # Level 2: Still mostly safe but with small gaps
-        platform_arr.append([0, HEIGHT - 90, 300, 20, 2])            # ground left (covers left lava)
-        platform_arr.append([350, HEIGHT - 90, 450, 20, 2])          # ground right (covers right lava)
-        platform_arr.append([60, 320, 180, 20, 2])                   # mid-left
-        platform_arr.append([320, 280, 170, 20, 2])                  # mid-center
-        platform_arr.append([560, 300, 200, 20, 2])                  # mid-right
-        platform_arr.append([200, 160, 150, 20, 2])                  # top
+        platform_arr.append([0, HEIGHT - 90, 480, 20, 2])            # ground left (covers left lava)
+        platform_arr.append([560, HEIGHT - 90, 720, 20, 2])          # ground right (covers right lava)
+        platform_arr.append([100, 380, 280, 20, 2])                  # mid-left
+        platform_arr.append([510, 340, 270, 20, 2])                  # mid-center
+        platform_arr.append([895, 360, 320, 20, 2])                  # mid-right
+        platform_arr.append([320, 190, 240, 20, 2])                  # top
         platform_source = "level2_safe"
         return
     
@@ -297,13 +334,13 @@ def get_level_platforms(level):
     # Boss levels (every 5th) get simpler, more open layouts for fireball room
     if level % 5 == 0:
         # Simple boss arena with wide open spaces
-        platform_arr.append([0, HEIGHT - 80, WIDTH // 2 - 100, 20, 2])
-        platform_arr.append([WIDTH // 2 + 100, HEIGHT - 80, WIDTH // 2 - 100, 20, 2])
-        platform_arr.append([80, HEIGHT - 220, 150, 20, 2])
-        platform_arr.append([WIDTH - 230, HEIGHT - 220, 150, 20, 2])
-        platform_arr.append([WIDTH // 2 - 100, HEIGHT // 2 + 20, 200, 20, 2])
-        platform_arr.append([60, HEIGHT // 3, 140, 20, 2])
-        platform_arr.append([WIDTH - 200, HEIGHT // 3, 140, 20, 2])
+        platform_arr.append([0, HEIGHT - 80, WIDTH // 2 - 160, 20, 2])
+        platform_arr.append([WIDTH // 2 + 160, HEIGHT - 80, WIDTH // 2 - 160, 20, 2])
+        platform_arr.append([130, HEIGHT - 260, 240, 20, 2])
+        platform_arr.append([WIDTH - 370, HEIGHT - 260, 240, 20, 2])
+        platform_arr.append([WIDTH // 2 - 160, HEIGHT // 2 + 25, 320, 20, 2])
+        platform_arr.append([100, HEIGHT // 3, 220, 20, 2])
+        platform_arr.append([WIDTH - 320, HEIGHT // 3, 220, 20, 2])
         platform_source = "boss_pattern"
         return
         
@@ -313,111 +350,111 @@ def get_level_platforms(level):
     
     if pattern == 0:
         # STAIRCASE LEFT - platforms ascending from left to right
-        platform_arr.append([20, HEIGHT - 80, 180, 20, 2])
-        platform_arr.append([220, HEIGHT - 160, 160, 20, 2])
-        platform_arr.append([400, HEIGHT - 240, 140, 20, 2])
-        platform_arr.append([560, HEIGHT - 320, 120, 20, 2])
-        platform_arr.append([100, HEIGHT - 400, 150, 20, 2])
-        platform_arr.append([450, HEIGHT - 480, 180, 20, 2])
+        platform_arr.append([30, HEIGHT - 95, 290, 20, 2])
+        platform_arr.append([350, HEIGHT - 190, 255, 20, 2])
+        platform_arr.append([640, HEIGHT - 290, 225, 20, 2])
+        platform_arr.append([895, HEIGHT - 385, 190, 20, 2])
+        platform_arr.append([160, HEIGHT - 480, 240, 20, 2])
+        platform_arr.append([720, HEIGHT - 575, 290, 20, 2])
         platform_source = "pattern_0"
         
     elif pattern == 1:
         # STAIRCASE RIGHT - platforms descending from left to right
-        platform_arr.append([20, HEIGHT - 480, 160, 20, 2])
-        platform_arr.append([200, HEIGHT - 400, 140, 20, 2])
-        platform_arr.append([360, HEIGHT - 320, 150, 20, 2])
-        platform_arr.append([530, HEIGHT - 240, 140, 20, 2])
-        platform_arr.append([150, HEIGHT - 160, 180, 20, 2])
-        platform_arr.append([550, HEIGHT - 80, 180, 20, 2])
+        platform_arr.append([30, HEIGHT - 575, 255, 20, 2])
+        platform_arr.append([320, HEIGHT - 480, 225, 20, 2])
+        platform_arr.append([575, HEIGHT - 385, 240, 20, 2])
+        platform_arr.append([850, HEIGHT - 290, 225, 20, 2])
+        platform_arr.append([240, HEIGHT - 190, 290, 20, 2])
+        platform_arr.append([880, HEIGHT - 95, 290, 20, 2])
         platform_source = "pattern_1"
         
     elif pattern == 2:
         # PILLARS - tall vertical columns of platforms
-        platform_arr.append([80, HEIGHT - 80, 100, 20, 2])
-        platform_arr.append([80, HEIGHT - 200, 100, 20, 2])
-        platform_arr.append([80, HEIGHT - 320, 100, 20, 2])
-        platform_arr.append([350, HEIGHT - 140, 100, 20, 2])
-        platform_arr.append([350, HEIGHT - 260, 100, 20, 2])
-        platform_arr.append([350, HEIGHT - 380, 100, 20, 2])
-        platform_arr.append([620, HEIGHT - 80, 100, 20, 2])
-        platform_arr.append([620, HEIGHT - 200, 100, 20, 2])
-        platform_arr.append([620, HEIGHT - 320, 100, 20, 2])
+        platform_arr.append([130, HEIGHT - 95, 160, 20, 2])
+        platform_arr.append([130, HEIGHT - 240, 160, 20, 2])
+        platform_arr.append([130, HEIGHT - 385, 160, 20, 2])
+        platform_arr.append([560, HEIGHT - 170, 160, 20, 2])
+        platform_arr.append([560, HEIGHT - 310, 160, 20, 2])
+        platform_arr.append([560, HEIGHT - 455, 160, 20, 2])
+        platform_arr.append([990, HEIGHT - 95, 160, 20, 2])
+        platform_arr.append([990, HEIGHT - 240, 160, 20, 2])
+        platform_arr.append([990, HEIGHT - 385, 160, 20, 2])
         platform_source = "pattern_2"
         
     elif pattern == 3:
         # PYRAMID - platforms form a pyramid shape
-        platform_arr.append([320, HEIGHT - 80, 160, 20, 2])
-        platform_arr.append([200, HEIGHT - 180, 120, 20, 2])
-        platform_arr.append([480, HEIGHT - 180, 120, 20, 2])
-        platform_arr.append([100, HEIGHT - 280, 100, 20, 2])
-        platform_arr.append([350, HEIGHT - 280, 100, 20, 2])
-        platform_arr.append([600, HEIGHT - 280, 100, 20, 2])
-        platform_arr.append([250, HEIGHT - 380, 80, 20, 2])
-        platform_arr.append([470, HEIGHT - 380, 80, 20, 2])
-        platform_arr.append([360, HEIGHT - 480, 80, 20, 2])
+        platform_arr.append([510, HEIGHT - 95, 255, 20, 2])
+        platform_arr.append([320, HEIGHT - 215, 190, 20, 2])
+        platform_arr.append([770, HEIGHT - 215, 190, 20, 2])
+        platform_arr.append([160, HEIGHT - 335, 160, 20, 2])
+        platform_arr.append([560, HEIGHT - 335, 160, 20, 2])
+        platform_arr.append([960, HEIGHT - 335, 160, 20, 2])
+        platform_arr.append([400, HEIGHT - 455, 130, 20, 2])
+        platform_arr.append([750, HEIGHT - 455, 130, 20, 2])
+        platform_arr.append([575, HEIGHT - 575, 130, 20, 2])
         platform_source = "pattern_3"
         
     elif pattern == 4:
         # ZIGZAG - alternating left-right platforms
-        platform_arr.append([50, HEIGHT - 80, 200, 20, 2])
-        platform_arr.append([550, HEIGHT - 160, 200, 20, 2])
-        platform_arr.append([50, HEIGHT - 240, 200, 20, 2])
-        platform_arr.append([550, HEIGHT - 320, 200, 20, 2])
-        platform_arr.append([250, HEIGHT - 400, 200, 20, 2])
-        platform_arr.append([50, HEIGHT - 480, 150, 20, 2])
-        platform_arr.append([600, HEIGHT - 480, 150, 20, 2])
+        platform_arr.append([80, HEIGHT - 95, 320, 20, 2])
+        platform_arr.append([880, HEIGHT - 190, 320, 20, 2])
+        platform_arr.append([80, HEIGHT - 290, 320, 20, 2])
+        platform_arr.append([880, HEIGHT - 385, 320, 20, 2])
+        platform_arr.append([400, HEIGHT - 480, 320, 20, 2])
+        platform_arr.append([80, HEIGHT - 575, 240, 20, 2])
+        platform_arr.append([960, HEIGHT - 575, 240, 20, 2])
         platform_source = "pattern_4"
         
     elif pattern == 6:
         # FLOATING ISLANDS - scattered small platforms
-        platform_arr.append([100, HEIGHT - 100, 90, 20, 2])
-        platform_arr.append([300, HEIGHT - 150, 80, 20, 2])
-        platform_arr.append([500, HEIGHT - 120, 85, 20, 2])
-        platform_arr.append([650, HEIGHT - 200, 90, 20, 2])
-        platform_arr.append([150, HEIGHT - 250, 100, 20, 2])
-        platform_arr.append([400, HEIGHT - 280, 75, 20, 2])
-        platform_arr.append([600, HEIGHT - 330, 80, 20, 2])
-        platform_arr.append([200, HEIGHT - 380, 90, 20, 2])
-        platform_arr.append([450, HEIGHT - 420, 85, 20, 2])
-        platform_arr.append([100, HEIGHT - 480, 100, 20, 2])
-        platform_arr.append([600, HEIGHT - 500, 95, 20, 2])
+        platform_arr.append([160, HEIGHT - 120, 145, 20, 2])
+        platform_arr.append([480, HEIGHT - 180, 130, 20, 2])
+        platform_arr.append([800, HEIGHT - 145, 135, 20, 2])
+        platform_arr.append([1040, HEIGHT - 240, 145, 20, 2])
+        platform_arr.append([240, HEIGHT - 300, 160, 20, 2])
+        platform_arr.append([640, HEIGHT - 335, 120, 20, 2])
+        platform_arr.append([960, HEIGHT - 395, 130, 20, 2])
+        platform_arr.append([320, HEIGHT - 455, 145, 20, 2])
+        platform_arr.append([720, HEIGHT - 505, 135, 20, 2])
+        platform_arr.append([160, HEIGHT - 575, 160, 20, 2])
+        platform_arr.append([960, HEIGHT - 600, 150, 20, 2])
         platform_source = "pattern_6"
         
     elif pattern == 7:
         # PARKOUR - challenging jumps with gaps
-        platform_arr.append([50, HEIGHT - 80, 140, 20, 2])
-        platform_arr.append([280, HEIGHT - 140, 100, 20, 2])
-        platform_arr.append([480, HEIGHT - 200, 90, 20, 2])
-        platform_arr.append([640, HEIGHT - 140, 110, 20, 2])
-        platform_arr.append([450, HEIGHT - 300, 100, 20, 2])
-        platform_arr.append([200, HEIGHT - 360, 120, 20, 2])
-        platform_arr.append([520, HEIGHT - 440, 90, 20, 2])
-        platform_arr.append([100, HEIGHT - 500, 130, 20, 2])
+        platform_arr.append([80, HEIGHT - 95, 225, 20, 2])
+        platform_arr.append([450, HEIGHT - 170, 160, 20, 2])
+        platform_arr.append([770, HEIGHT - 240, 145, 20, 2])
+        platform_arr.append([1025, HEIGHT - 170, 175, 20, 2])
+        platform_arr.append([720, HEIGHT - 360, 160, 20, 2])
+        platform_arr.append([320, HEIGHT - 430, 190, 20, 2])
+        platform_arr.append([830, HEIGHT - 530, 145, 20, 2])
+        platform_arr.append([160, HEIGHT - 600, 210, 20, 2])
         platform_source = "pattern_7"
         
     elif pattern == 8:
         # SPLIT ARENA - two separate sides with bridge
-        platform_arr.append([20, HEIGHT - 80, 280, 20, 2])
-        platform_arr.append([500, HEIGHT - 80, 280, 20, 2])
-        platform_arr.append([50, HEIGHT - 200, 180, 20, 2])
-        platform_arr.append([570, HEIGHT - 200, 180, 20, 2])
-        platform_arr.append([80, HEIGHT - 320, 140, 20, 2])
-        platform_arr.append([580, HEIGHT - 320, 140, 20, 2])
-        platform_arr.append([320, HEIGHT - 260, 160, 20, 2])  # Bridge
-        platform_arr.append([150, HEIGHT - 440, 120, 20, 2])
-        platform_arr.append([530, HEIGHT - 440, 120, 20, 2])
+        platform_arr.append([30, HEIGHT - 95, 450, 20, 2])
+        platform_arr.append([800, HEIGHT - 95, 450, 20, 2])
+        platform_arr.append([80, HEIGHT - 240, 290, 20, 2])
+        platform_arr.append([910, HEIGHT - 240, 290, 20, 2])
+        platform_arr.append([130, HEIGHT - 385, 225, 20, 2])
+        platform_arr.append([925, HEIGHT - 385, 225, 20, 2])
+        platform_arr.append([510, HEIGHT - 310, 255, 20, 2])  # Bridge
+        platform_arr.append([240, HEIGHT - 530, 190, 20, 2])
+        platform_arr.append([850, HEIGHT - 530, 190, 20, 2])
         platform_source = "pattern_8"
         
     elif pattern == 9:
         # SPIRAL - platforms in a spiral pattern
-        platform_arr.append([350, HEIGHT - 80, 150, 20, 2])
-        platform_arr.append([550, HEIGHT - 160, 130, 20, 2])
-        platform_arr.append([600, HEIGHT - 280, 120, 20, 2])
-        platform_arr.append([450, HEIGHT - 380, 140, 20, 2])
-        platform_arr.append([250, HEIGHT - 440, 130, 20, 2])
-        platform_arr.append([80, HEIGHT - 360, 120, 20, 2])
-        platform_arr.append([50, HEIGHT - 240, 140, 20, 2])
-        platform_arr.append([150, HEIGHT - 120, 150, 20, 2])
+        platform_arr.append([560, HEIGHT - 95, 240, 20, 2])
+        platform_arr.append([880, HEIGHT - 190, 210, 20, 2])
+        platform_arr.append([960, HEIGHT - 335, 190, 20, 2])
+        platform_arr.append([720, HEIGHT - 455, 225, 20, 2])
+        platform_arr.append([400, HEIGHT - 530, 210, 20, 2])
+        platform_arr.append([130, HEIGHT - 430, 190, 20, 2])
+        platform_arr.append([80, HEIGHT - 290, 225, 20, 2])
+        platform_arr.append([240, HEIGHT - 145, 240, 20, 2])
         platform_source = "pattern_9"
         
     else:
