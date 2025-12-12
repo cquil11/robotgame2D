@@ -953,7 +953,6 @@ class Game:
                             self.player.jump()
                         except Exception:
                             pass
-<<<<<<< HEAD
                 # Fireball hotkeys (R or E keys)
                 if not self.paused:
                     if event.key in (pg.K_r, pg.K_e):
@@ -962,18 +961,6 @@ class Game:
                         if fireball:
                             self.fireballs.add(fireball)
                             self.all_sprites.add(fireball)
-=======
-                    # Fireball cast mapped to 'F' key
-                    elif event.key == pg.K_f:
-                        try:
-                            mouse_pos = pg.mouse.get_pos()
-                            fireball = self.player.cast_fireball(mouse_pos)
-                            if fireball:
-                                self.fireballs.add(fireball)
-                                self.all_sprites.add(fireball)
-                        except Exception:
-                            pass
->>>>>>> d6214d87ddc51fcedfc73cda2cdb3f23add90b99
             # Mouse buttons: left = sword attack, right = shield
             if event.type == pg.MOUSEBUTTONDOWN and not self.paused:
                 if event.button == 1:  # Left mouse button -> melee hit
@@ -986,15 +973,6 @@ class Game:
                         self.player.activate_shield()
                     except Exception:
                         pass
-<<<<<<< HEAD
-=======
-
-    def trigger_screen_shake(self, intensity=3, duration=5):
-        """Trigger screen shake effect for dramatic moments"""
-        self.screen_shake_intensity = intensity
-        self.screen_shake_timer = duration
-        self.screen_shake_max = duration
->>>>>>> d6214d87ddc51fcedfc73cda2cdb3f23add90b99
 
     def draw(self):
         # game loop draw
@@ -1104,17 +1082,11 @@ class Game:
         
         # Draw shield indicator if active or on cooldown
         if self.player.shield_active:
-<<<<<<< HEAD
             shield_text = f"SHIELD ACTIVE: {self.player.shield_time // 30}s"
             self.draw_text(shield_text, 20, (100, 200, 255), WIDTH/2, 10)
         elif self.player.shield_cooldown > 0:
             cooldown_text = f"Shield CD: {self.player.shield_cooldown // 30}s"
             self.draw_text(cooldown_text, 16, (150, 150, 150), WIDTH - 100, 10)
-=======
-            shield_text = f"SHIELD: {self.player.shield_time // 10}s"
-            self.draw_text(shield_text, 18, (100, 150, 255), powerup_x, powerup_y)
-            powerup_y += 25
->>>>>>> d6214d87ddc51fcedfc73cda2cdb3f23add90b99
         
         # Draw damage boost indicator if active
         if self.player.damage_boost_active:
@@ -1260,6 +1232,12 @@ class Game:
             pass
         # fallback
         self.screen.fill(BLACK)
+
+    def trigger_screen_shake(self, intensity, duration_frames):
+        """Trigger a screen shake effect with given intensity and duration"""
+        self.screen_shake_intensity = intensity
+        self.screen_shake_timer = duration_frames
+        self.screen_shake_max = duration_frames
 
     def draw_start_background(self):
         return draw_start_background(self)

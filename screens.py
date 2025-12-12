@@ -545,7 +545,6 @@ def show_instructions_screen(game):
             shade = int(20 + (i / WINDOW_HEIGHT) * 40)
             pg.draw.line(game.screen, (shade, shade, shade + 20), (0, i), (WIDTH, i))
         
-<<<<<<< HEAD
         draw_text(game, "HOW TO PLAY", 64, GREEN, WIDTH/2, 50)
         
         # Controls Section
@@ -600,36 +599,6 @@ def show_instructions_screen(game):
         
         # Footer
         draw_text(game, "Press ENTER or ESC to return to menu", 22, (150, 255, 150), WIDTH/2, WINDOW_HEIGHT - 40)
-=======
-        draw_text(game, "HOW TO PLAY", 56, GREEN, WIDTH/2, 30)
-        
-        instructions = [
-            "MOVEMENT: Use arrow keys or WASD to move left/right",
-            "JUMP: Press SPACEBAR or W to jump",
-            "ATTACK: Left-click to sword attack (builds combo)",
-            "FIREBALL: Press F to cast fireball (costs 15 mana)",
-            "SHIELD: Right-click to activate protective shield (costs 20 mana)",
-            "",
-            "GOAL: Defeat all enemies to advance to next level",
-            "UPGRADES: Choose stat upgrades after completing levels",
-            "BOSS LEVELS: Every 5th level has a powerful boss",
-            "",
-            "SCORING: Kill streak multiplies points",
-            "Perfect clear (no damage taken) = +1000 bonus",
-            "Elite enemies (golden) = 3x score and health",
-            "",
-            "Press ENTER to return to menu"
-        ]
-        
-        y = 110
-        for line in instructions:
-            if line == "":
-                y += 15
-            else:
-                color = YELLOW if line.startswith("GOAL") or line.startswith("UPGRADES") or line.startswith("BOSS") else WHITE
-                draw_text(game, line, 18, color, WIDTH/2, y)
-                y += 28
->>>>>>> d6214d87ddc51fcedfc73cda2cdb3f23add90b99
         
         pg.display.flip()
         

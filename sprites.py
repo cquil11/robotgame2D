@@ -264,19 +264,11 @@ class Player(pg.sprite.Sprite):
         return None
     
     def activate_shield(self):
-<<<<<<< HEAD
         """Activate shield to block projectiles and reduce damage"""
         if self.shield_cooldown == 0 and not self.shield_active:
             self.shield_active = True
             self.shield_time = self.shield_max_duration
             self.shield_cooldown = self.shield_cooldown_max
-=======
-        """Activate a protective shield that costs mana"""
-        shield_cost = 20  # Mana cost for shield
-        if self.mana >= shield_cost and not self.shield_active:
-            self.mana -= shield_cost
-            self.shield_active = True
->>>>>>> d6214d87ddc51fcedfc73cda2cdb3f23add90b99
             return True
         return False
     
@@ -574,10 +566,15 @@ class Fireball(pg.sprite.Sprite):
         self.game = game
         self._layer = projectile_layer
         
-        # Create fireball visual (orange/red circle)
-        self.image = pg.Surface((16, 16), pg.SRCALPHA)
-        pg.draw.circle(self.image, (255, 100, 0), (8, 8), 8)  # Orange outer
-        pg.draw.circle(self.image, (255, 200, 0), (8, 8), 5)  # Yellow inner
+        # Create fireball visual from image and scale down for smoother rendering
+        try:
+            img = pg.image.load(path.join(path.dirname(path.abspath(__file__)), 'images', 'lava_ball.png')).convert_alpha()
+            self.image = pg.transform.smoothscale(img, (16, 16))
+        except Exception:
+            # Fallback to simple circle if image missing
+            self.image = pg.Surface((16, 16), pg.SRCALPHA)
+            pg.draw.circle(self.image, (255, 100, 0), (8, 8), 8)
+            pg.draw.circle(self.image, (255, 200, 0), (8, 8), 5)
         
         self.rect = self.image.get_rect(center=start_pos)
         
@@ -758,31 +755,14 @@ class Arrow(pg.sprite.Sprite):
         self.game = game
         self._layer = projectile_layer
 
-        # Choose animation frames if available, otherwise use a single image
+        # Use arrow_skeleton image from settings (already scaled to 24x8)
         try:
-            frames = arrow_skeleton_frames
+            self.image = arrow_skeleton
+            self.frames = None
         except NameError:
-            frames = []
-
-        if frames and len(frames) > 0:
-            # Scale frames to 50% size for smaller arrows
-            scaled_frames = []
-            for f in frames:
-                w, h = f.get_size()
-                scaled_frames.append(pg.transform.scale(f, (w // 2, h // 2)))
-            self.frames = scaled_frames
-            self.frame_index = 0
-            self.image = self.frames[0]
-        else:
-            # Fallback to the static arrow (scaled to 50%)
-            try:
-                orig = arrow_skeleton
-                w, h = orig.get_size()
-                self.image = pg.transform.scale(orig, (w // 2, h // 2))
-            except NameError:
-                # create tiny surface (smaller)
-                self.image = pg.Surface((24, 6), pg.SRCALPHA)
-                self.image.fill((120, 80, 40))
+            # Fallback if arrow_skeleton not loaded
+            self.image = pg.Surface((24, 8), pg.SRCALPHA)
+            self.image.fill((120, 80, 40))
             self.frames = None
 
         self.rect = self.image.get_rect(center=start_pos)
@@ -953,14 +933,14 @@ class MonsterBullet(pg.sprite.Sprite):
     def __init__(self, target_pos=None):
         pg.sprite.Sprite.__init__(self)
         self._layer = projectile_layer
-        # Use preloaded lava_ball if available; otherwise create a fallback sprite
+        # Use preloaded lava_ball image (already scaled to 16x16)
         try:
             self.image = lava_ball
         except Exception:
-            surf = pg.Surface((18, 18), pg.SRCALPHA)
-            pg.draw.circle(surf, (255, 100, 0), (9, 9), 9)
-            pg.draw.circle(surf, (255, 180, 60), (9, 9), 5)
-            self.image = surf
+            # Fallback surface if image missing
+            self.image = pg.Surface((16, 16), pg.SRCALPHA)
+            pg.draw.circle(self.image, (255, 100, 0), (8, 8), 8)
+            pg.draw.circle(self.image, (255, 180, 60), (8, 8), 5)
         self.rect = self.image.get_rect()
         self.pos = vec(WIDTH / 2, HEIGHT / 2)
         

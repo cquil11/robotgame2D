@@ -113,11 +113,10 @@ def safe_load_sound(pth):
 # Disable sprite sheet - using individual PNG images
 _knight_frames = None
 
-# Helper to scale player sprites
+# Helper to scale player sprites to 20x30
 def scale_player_sprite(img):
     if img:
-        w, h = img.get_size()
-        return pg.transform.scale(img, (int(w * PLAYER_SCALE), int(h * PLAYER_SCALE)))
+        return pg.transform.smoothscale(img, (20, 30))
     return img
 
 pleft = scale_player_sprite(safe_load_image('images/sprites/player/player_left.png'))
@@ -140,27 +139,27 @@ end_background = safe_load_image('images/backgrounds/game_over.png')
 level_background = safe_load_image('images/backgrounds/level_complete.png')
 platform_image = safe_load_image('images/ui/platform.png')
 lava = safe_load_image('images/ui/lava.png')
-lava_ball = safe_load_image('images/ui/lava_ball.png')
-gleft = safe_load_image('images/sprites/enemies/Goblin2.png')
-gright = safe_load_image('images/sprites/enemies/Goblin.png')
-sleft = safe_load_image('images/sprites/enemies/skel_left.png')
-sright = safe_load_image('images/sprites/enemies/skel_right.png')
-coin = safe_load_image('images/ui/coin.png')
-heart_image = safe_load_image('images/ui/heart.png')
+lava_ball = pg.transform.smoothscale(safe_load_image('images/ui/lava_ball.png'), (16, 16))
+gleft = pg.transform.smoothscale(safe_load_image('images/sprites/enemies/Goblin2.png'), (20, 30))
+gright = pg.transform.smoothscale(safe_load_image('images/sprites/enemies/Goblin.png'), (20, 30))
+sleft = pg.transform.smoothscale(safe_load_image('images/sprites/enemies/skel_left.png'), (20, 30))
+sright = pg.transform.smoothscale(safe_load_image('images/sprites/enemies/skel_right.png'), (20, 30))
+coin = pg.transform.smoothscale(safe_load_image('images/ui/coin.png'), (12, 12))
+heart_image = pg.transform.smoothscale(safe_load_image('images/ui/heart.png'), (20, 20))
 
 # Optional new generated sprites (fall back to defaults if missing)
 try:
-    monster_scary = pg.image.load('images/sprites/monsters/monster_scary.png')
+    monster_scary = pg.transform.smoothscale(pg.image.load('images/sprites/monsters/monster_scary.png'), (80, 80))
 except Exception:
     # Fallback: create a simple red circle
-    monster_scary = pg.Surface((128, 128), pg.SRCALPHA)
-    pg.draw.circle(monster_scary, (200, 50, 50), (64, 64), 50)
+    monster_scary = pg.Surface((80, 80), pg.SRCALPHA)
+    pg.draw.circle(monster_scary, (200, 50, 50), (40, 40), 35)
 
 try:
-    arrow_skeleton = pg.image.load('images/sprites/enemies/arrow_skeleton.png')
+    arrow_skeleton = pg.transform.smoothscale(pg.image.load('images/sprites/enemies/arrow_skeleton.png'), (24, 8))
 except Exception:
     # create a tiny surface fallback
-    arrow_skeleton = pg.Surface((48, 12), pg.SRCALPHA)
+    arrow_skeleton = pg.Surface((24, 8), pg.SRCALPHA)
     arrow_skeleton.fill((120, 80, 40))
 
 # Optional animation frames for arrows (not currently generated)
